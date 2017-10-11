@@ -14,7 +14,7 @@
 
 using KernelMethods
 import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
-import KernelMethods.CrossValidation: montecarlo
+import KernelMethods.CrossValidation: montecarlo, kfolds
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!
 import SimilaritySearch: L2Distance
 using Base.Test
@@ -42,6 +42,7 @@ end
         1
     end
     @test montecarlo(f, data, data, runs=10) |> sum == 10
+    @test kfolds(f, data, data, folds=10, shuffle=true) |> sum == 10
 end
 
 @testset "KNN" begin
@@ -55,7 +56,12 @@ end
     X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
     y = String.(data[:, 5])
     nnc = NearNeighborClassifier(X, y, L2Distance())
-    @test optimize!(nnc, accuracy, runs=3, trainratio=0.2, validationratio=0.2)[1][1] > 0.9
-    @test optimize!(nnc, accuracy, runs=3, trainratio=0.3, validationratio=0.3)[1][1] > 0.95
-    @test optimize!(nnc, accuracy, runs=3, trainratio=0.7, validationratio=0.3)[1][1] > 0.96
+    @test optimize!(nnc, accuracy, runs=3, trainratio=0.2, testratio=0.2)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, runs=3, trainratio=0.3, testratio=0.3)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, runs=3, trainratio=0.7, testratio=0.3)[1][1] > 0.9
+
+    @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.95
+    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.95
+    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
 end

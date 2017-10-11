@@ -13,7 +13,7 @@
 # limitations under the License.
 
 export NearNeighborClassifier, predict, optimize!
-import KernelMethods.CrossValidation: montecarlo
+import KernelMethods.CrossValidation: montecarlo, kfolds
 
 mutable struct NearNeighborClassifier{IndexType,LabelType}
     X::IndexType
@@ -27,7 +27,7 @@ function NearNeighborClassifier(X::Vector{ItemType}, y::Vector{LabelType}, dist,
     NearNeighborClassifier(index, y, k, weight)
 end
 
-function optimize!(nnc::NearNeighborClassifier, score::Function; runs=3, trainratio=0.5, validationratio=0.5)
+function optimize!(nnc::NearNeighborClassifier, score::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
     bestlist = Tuple[]
     function f(train_X, train_y, test_X, test_y)
         tmp = NearNeighborClassifier(train_X, train_y, nnc.X.dist)
@@ -45,8 +45,11 @@ function optimize!(nnc::NearNeighborClassifier, score::Function; runs=3, trainra
         end
         bestlist[end][1]
     end
-
-    montecarlo(f, nnc.X.db, nnc.y, runs=runs, trainratio=trainratio, validationratio=validationratio)
+    if folds > 1
+        kfolds(f, nnc.X.db, nnc.y, folds=folds, shuffle=shufflefolds)
+    else
+        montecarlo(f, nnc.X.db, nnc.y, runs=runs, trainratio=trainratio, testratio=testratio)
+    end
     sort!(bestlist, by=x -> (-x[1], x[2]))
     nnc.k = bestlist[1][2]
     nnc.weight = bestlist[1][3]
