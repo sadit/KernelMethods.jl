@@ -49,7 +49,7 @@ end
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
     filename = basename(url)
     if !isfile(filename)
-        download(url)
+        download(url, filename)
     end
     data = readcsv(filename)
     X = data[:, 1:4]
