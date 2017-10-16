@@ -61,6 +61,14 @@ function predict(nnc::NearNeighborClassifier{IndexType,LabelType}, vector) where
     for i in 1:length(vector)
         y[i] = predict_one(nnc, vector[i])
     end
+    y
+end
+
+function predict_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, vector) where {IndexType,LabelType}
+    y = Vector{LabelType}(length(vector))
+    for i in 1:length(vector)
+        y[i] = predict_one_proba(nnc, vector[i])
+    end
 
     y
 end
@@ -88,4 +96,31 @@ function predict_one(nnc::NearNeighborClassifier{IndexType,LabelType}, item) whe
     # info((item, m))
 
     m[end].first
+end
+
+function predict_one_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, item) where {IndexType,LabelType}
+    res = KnnResult(nnc.k)
+    search(nnc.X, item, res)
+    counter = Dict{typeof(nnc.y[1]), Float64}()
+    [counter[l]=0 for l in Set(nnc.y)]
+    t=0.0
+    if nnc.weight == :uniform
+        for p in res
+            l = nnc.y[p.objID]
+            counter[l] = get(counter, l, 0) + 1.0
+        end
+        t=length(res)
+    elseif nnc.weight == :distance
+        for p in res
+            l = nnc.y[p.objID]
+            counter[l] = get(counter, l, 0) + (p.dist>0 ? 1/p.dist :0)
+            t+= (p.dist>0 ? 1/p.dist :0)
+        end
+    else
+        throw(ArgumentError("Unknown weighting scheme $(nnc.weight)"))
+    end
+    for (k,v) in counter
+        counter[k]=v/t
+    end
+    sort(collect(counter))
 end
