@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sadit/KernelMethods.jl.svg?branch=master)](https://travis-ci.org/sadit/KernelMethods.jl)
+
 # Kernel Methods
 
 
