@@ -15,7 +15,7 @@
 using KernelMethods
 import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
 import KernelMethods.CrossValidation: montecarlo, kfolds
-import KernelMethods.Supervised: NearNeighborClassifier, optimize!
+import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict, predict_proba
 import SimilaritySearch: L2Distance
 using Base.Test
 
@@ -64,4 +64,6 @@ end
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.95
     @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.95
     @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
+    @test sum([maximum([i.second for i in x]) for x in predict_proba(nnc, X, smoothing=0)]) == length(X)
+    @show sum([maximum([i.second for i in x]) for x in predict_proba(nnc, X, smoothing=0.01)]) / length(X) ≈ 0.9805825242718454
 end
