@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/sadit/KernelMethods.jl.svg?branch=master)](https://travis-ci.org/sadit/KernelMethods.jl)
-
+[![Coverage Status](https://coveralls.io/repos/github/sadit/KernelMethods.jl/badge.svg?branch=master)](https://coveralls.io/github/sadit/KernelMethods.jl?branch=master)
 # Kernel Methods
 
 
@@ -7,6 +7,33 @@ KernelMethods.jl is a library that implements and explores Kernel-Based Methods 
 
 ## Install
 
+To start using `KernelMethods.jl` just type into an active Julia session
+
+```julia
+Pkg.clone("https://github.com/sadit/KernelMethods.jl.git")
+
+using KernelMethods
+
+```
+
+## Usage
+
+`KernelMethods.jl` consists of a few modules
+
+- `KernelMethods.Scores`. It contains several common performance measures, i.e., accuracy, recall, precision, f1, precision_recall.
+- `KernelMethods.CrossValidation`. Some methods to perform cross validation, all of them work through callback functions:
+   - `montecarlo`
+   - `kfolds`
+- `KernelMethods.Supervised`. It contains methods related to supervised learning
+   - `NearNeighborClassifier`. It defines a `KNN` classifier
+   - `optimize!`
+   - `predict`
+   - `predict_proba`
+
+The distance functions are mostly taken from:
+- `SimilaritySearch`
+
+### Dependencies
 KernelMethods.jl depends on
 
 - [SimilaritySearch.jl](https://github.com/sadit/SimilaritySearch.jl)
