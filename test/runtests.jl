@@ -17,7 +17,9 @@ import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
 import KernelMethods.CrossValidation: montecarlo, kfolds
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict, predict_proba
 import SimilaritySearch: L2Distance
+import KernelMethods.Nets: KlusterClassifier
 using Base.Test
+
 
 @testset "Scores" begin
     @test accuracy([1,1,1,1,1], [1,1,1,1,1]) == 1.0
@@ -66,4 +68,20 @@ end
     @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
     @test sum([maximum([i.second for i in x]) for x in predict_proba(nnc, X, smoothing=0)]) == length(X)
     @show sum([maximum([i.second for i in x]) for x in predict_proba(nnc, X, smoothing=0.01)]) / length(X) ≈ 0.9805825242718454
+end
+
+
+@testset "KlusterClassifier" begin
+    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
+    filename = basename(url)
+    if !isfile(filename)
+        download(url, filename)
+    end
+    data = readcsv(filename)
+    X = data[:, 1:4]
+    X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
+    y = String.(data[:, 5])
+    kc = KlusterClassifier(X,y)
+    println("################ ", [opv for (c,opv) in kc])
+    @test kc[1][2]>0.9
 end
