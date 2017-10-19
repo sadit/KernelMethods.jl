@@ -26,7 +26,7 @@ end
 function sigmoid(xo,xm; sigma=1, distance=L2SquaredDistance())
     sim=2*sqrt(sigma)/(1+exp(-distance(xo,xm)))
     sim = isnan(sim) ? 0 : sim
-    sim = isinf(sim) ? 1: sim
+    sim = isinf(sim) ? -1: sim
     return sim
 end
 

@@ -1,3 +1,17 @@
+# Copyright 2017 Jose Ortiz-Bejar 
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 module Nets
 export Net, enet, kmnet, dnet, gen_features, KernelClassifier
 import KernelMethods.Kernels: sigmoid, gaussian, linear, cuchy
@@ -5,6 +19,11 @@ import KernelMethods.Scores: accuracy, recall
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict_one, predict_one_proba
 using SimilaritySearch
 using TextModel
+using PyCall
+
+@pyimport sklearn.naive_bayes as nb
+@pyimport sklearn.model_selection as ms
+
 #using JSON
 #using DataStructures
 
@@ -242,10 +261,32 @@ function gen_features(Xo,N::Net)
     return [Float64.(x) for x in Xr]
 end
 
-function KlusterClassifier(Xe,Ye; op_function=accuracy, 
-                           K=[4,8,16,32,128],
+
+function traintest(N;op_function=recall,runs=3,folds=0,trainratio=0.7,testratio=0.3)
+    clf,avg=nb.GaussianNB(),0 
+    skf=ms.ShuffleSplit(n_splits=runs,train_size=trainratio
+                               ,test_size=testratio)
+    X=gen_features(N.data,N)
+    y=N.labels
+    skf[:get_n_splits](X,y)
+    for (ei,vi) in skf[:split](X,y)
+        ei,vi=ei+1,vi+1
+        xt,xv=X[ei],X[vi]
+        yt,yv=y[ei],y[vi]
+        clf[:fit](xt,yt)
+        y_pred=clf[:predict](xv)
+        avg+=op_function(yv,y_pred)
+    end
+    #println("========== ",length(N.centroids) ,"  ",avg/folds)
+    clf[:fit](X,y)
+    return clf,avg/runs
+end
+
+
+function KlusterClassifier(Xe,Ye; op_function=recall, 
+                           K=[4,8,16,32],
                            kernels=[gaussian,sigmoid,linear],
-                           runs=5, trainratio=0.7, testratio=0.3,folds=0)
+                           runs=3, trainratio=0.6, testratio=0.4,folds=0)
     top=[]
     DNNC=Dict()
     distances=[("L2",L2SquaredDistance()),("cosine",cosine)]
@@ -264,12 +305,16 @@ function KlusterClassifier(Xe,Ye; op_function=accuracy,
                         nnc = NearNeighborClassifier(X,Ye, distance)
                         opval,kknn,w=optimize!(nnc, op_function,runs=runs, trainratio=trainratio, 
                                                testratio=testratio,folds=folds)[1]
-                        kernelname=Symbol(kernel)
+                        kernelname=split(string(Symbol(kernel)),".")[3]
                         key="$nettype/$kernelname/$k/KNN$kknn/$kd"
-                        #println("##### ",key)
                         push!(top,(opval,key))
                         DNNC[key]=(nnc,N)
                     end
+                    key="$nettype/$kernelname/$k/NaiveBayes"
+                    nbc,opval=traintest(N,op_function=op_function,folds=folds,
+                        trainratio=trainratio,testratio=testratio)
+                    push!(top,(opval,key))
+                    DNNC[key]=(nbc,N)   
                 end
             end
         end
@@ -279,16 +324,26 @@ function KlusterClassifier(Xe,Ye; op_function=accuracy,
 end
 
 function predict(knc,X;ensemble_k=1)
-    cl,N,desc=knc[1]
-    xv=gen_features(X,N)
-    y_pred=[predict_one(cl,x)[1].first for x in xv]
+    kc,opv,desc=knc[1]
+    cl,N=kc
+    xv=gen_features(X,N)       
+    if contains(desc,"KNN")  
+        y_pred=[predict_one(cl,x)[1].first for x in xv]
+    else
+        y_pred=cl[:predict](xv) 
+    end 
     y_pred
 end
 
 function predict_proba(knc,X;ensemble_k=1)
-    cl,N,desc=knc[1]
+    kc,opv,desc=knc[1]
+    cl,N=kc
     xv=gen_features(X,N)
-    y_pred=[predict_one_proba(cl,x) for x in xv]
+    if contains(desc,"KNN")  
+        y_pred=[predict_one_proba(cl,x) for x in xv]
+    else
+        y_pred=cl[:predict_proba](xv) 
+    end
     y_pred
 end
 
