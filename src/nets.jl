@@ -324,14 +324,23 @@ function KlusterClassifier(Xe,Ye; op_function=recall,
 end
 
 function predict(knc,X;ensemble_k=1)
-    kc,opv,desc=knc[1]
-    cl,N=kc
-    xv=gen_features(X,N)       
-    if contains(desc,"KNN")  
-        y_pred=[predict_one(cl,x)[1].first for x in xv]
-    else
-        y_pred=cl[:predict](xv) 
-    end 
+    y_t=[]
+    for i in 1:ensemble_k
+        kc,opv,desc=knc[i]  
+        cl,N=kc
+        xv=gen_features(X,N)       
+        if contains(desc,"KNN")  
+            y_i=[predict_one(cl,x)[1].first for x in xv]
+        else
+            y_i=cl[:predict](xv) 
+        end 
+        y_t = length(y_t)>0 ? hcat(y_t,y_i) : hcat(y_i)
+    end
+    y_pred=[]
+    for i in 1:length(y_t[:,1])
+        y_r=y_t[i,:]
+        push!(y_pred,last(sort([(count(x->x==k,y_r),k) for k in unique(y_r)]))[2])
+    end
     y_pred
 end
 
