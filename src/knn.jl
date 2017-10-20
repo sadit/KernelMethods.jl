@@ -12,28 +12,75 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export NearNeighborClassifier, predict, optimize!, predict_proba
-import KernelMethods.CrossValidation: montecarlo, kfolds
+export NearNeighborClassifier
 
 mutable struct NearNeighborClassifier{IndexType,LabelType}
     X::IndexType
-    y::Vector{LabelType}
-    unique_y::Vector{LabelType}
+    y::Vector{Int}
     k::Int
+    le::LabelEncoder
     weight
 end
 
-const SMOOTHING_FACTOR = 1e-6
+const NNC_SMOOTHING_FACTOR = 1e-6
 
 function NearNeighborClassifier(X::Vector{ItemType}, y::Vector{LabelType}, dist, k::Int=1, weight=:uniform, indexclass=Sequential) where {ItemType, LabelType}
+    le = LabelEncoder(y)
+    y_ = transform.(le, y)
     index = indexclass(X, dist)
-    u = unique(y)
-    sort!(u)
-    NearNeighborClassifier(index, y, u, k, weight)
+    NearNeighborClassifier{indexclass, LabelType}(index, y_, k, le, weight)
 end
 
-function optimize!(nnc::NearNeighborClassifier, score::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
-    bestlist = Tuple[]
+function predict(nnc::NearNeighborClassifier{IndexType,LabelType}, vector) where {IndexType,LabelType}
+    [predict_one(nnc, item) for item in vector]
+end
+
+function predict_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, vector; smoothing=0.0) where {IndexType,LabelType}
+    [predict_one_proba(nnc, item, smoothing=smoothing) for item in vector]
+end
+
+function _predict_one(nnc::NearNeighborClassifier{IndexType,LabelType}, item) where {IndexType,LabelType}
+    res = KnnResult(nnc.k)
+    search(nnc.X, item, res)
+    w = zeros(Float64, length(nnc.le.labels))
+    if nnc.weight == :uniform
+        for p in res
+            l = nnc.y[p.objID]
+            w[l] += 1.0
+        end
+    elseif nnc.weight == :distance
+        for p in res
+            l = nnc.y[p.objID]
+            w[l] += 1.0 / (p.dist + NNC_SMOOTHING_FACTOR)
+        end
+    else
+        throw(ArgumentError("Unknown weighting scheme $(nnc.weight)"))
+    end
+
+    w
+end
+
+function predict_one(nnc::NearNeighborClassifier{IndexType,LabelType}, item) where {IndexType,LabelType}
+    score, i = findmax(_predict_one(nnc, item))
+    inverse_transform(nnc.le, i)
+end
+
+function predict_one_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, item; smoothing=0.1) where {IndexType,LabelType}
+    w = _predict_one(nnc, item)
+    t = sum(w)
+
+    s = t * smoothing
+    ss = s * length(w)
+
+    for i in 1:length(w)
+        w[i] = (w[i] + s) / (t + ss)  # overriding previous w
+    end
+
+    w
+end
+
+function optimize!(nnc::NearNeighborClassifier, scorefun::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
+    mem = Dict{Tuple,Float64}()
     function f(train_X, train_y, test_X, test_y)
         tmp = NearNeighborClassifier(train_X, train_y, nnc.X.dist)
         kmax = sqrt(length(nnc.X.db)) |> round |> Int
@@ -43,77 +90,26 @@ function optimize!(nnc::NearNeighborClassifier, score::Function; runs=3, trainra
                 tmp.weight = weight
                 tmp.k = k - 1
                 pred_y = predict(tmp, test_X)
-                s = score(test_y, pred_y)
-                push!(bestlist, (s, k - 1, weight))
+                score = scorefun(test_y, pred_y)
+                key = (k - 1, weight)
+                mem[key] = get(mem, key, 0.0) + score
             end
             k += k
         end
-        bestlist[end][1]
+        0
     end
     if folds > 1
         kfolds(f, nnc.X.db, nnc.y, folds=folds, shuffle=shufflefolds)
+        bestlist = [(score/folds, conf) for (conf, score) in mem]
     else
         montecarlo(f, nnc.X.db, nnc.y, runs=runs, trainratio=trainratio, testratio=testratio)
+        bestlist = [(score/runs, conf) for (conf, score) in mem]
     end
-    sort!(bestlist, by=x -> (-x[1], x[2]))
-    nnc.k = bestlist[1][2]
-    nnc.weight = bestlist[1][3]
+
+    sort!(bestlist, by=x -> (-x[1], x[2][1]))
+    best = bestlist[1]
+    nnc.k = best[2][1]
+    nnc.weight = best[2][2]
+
     bestlist
-end
-
-function predict(nnc::NearNeighborClassifier{IndexType,LabelType}, vector) where {IndexType,LabelType}
-    y = Vector{LabelType}(length(vector))
-    for i in 1:length(vector)
-        m = predict_one(nnc, vector[i])
-        y[i] = m[1].first
-    end
-    y
-end
-
-function predict_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, vector; smoothing=0.05) where {IndexType,LabelType}
-    y = Vector{Dict{LabelType,Float64}}(length(vector))
-    for i in 1:length(vector)
-        y[i] = predict_one_proba(nnc, vector[i], smoothing=smoothing)
-    end
-
-    y
-end
-
-function predict_one(nnc::NearNeighborClassifier{IndexType,LabelType}, item) where {IndexType,LabelType}
-    res = KnnResult(nnc.k)
-    search(nnc.X, item, res)
-    counter = Dict{typeof(nnc.y[1]), Float64}()
-    for k in nnc.unique_y
-        counter[k] = 0.0
-    end
-    if nnc.weight == :uniform
-        for p in res
-            l = nnc.y[p.objID]
-            counter[l] += 1.0
-        end
-    elseif nnc.weight == :distance
-        for p in res
-            l = nnc.y[p.objID]
-            counter[l] += 1.0 / (p.dist + SMOOTHING_FACTOR)
-        end
-    else
-        throw(ArgumentError("Unknown weighting scheme $(nnc.weight)"))
-    end
-
-    m = collect(counter)
-    sort!(m, by=x->-x.second)
-    m
-end
-
-function predict_one_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, item; smoothing=0.1) where {IndexType,LabelType}
-    m = predict_one(nnc, item)
-    t = 0.0
-    for x in m
-        t += x.second
-    end
-
-    s = t * smoothing
-    ss = s * length(nnc.unique_y)
-
-    Dict(x.first => (x.second + s) / (t + ss) for x in m)
 end
