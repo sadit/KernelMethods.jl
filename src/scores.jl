@@ -21,7 +21,7 @@ function recall(gold, predict; weight=:macro)::Float64
     if weight == :macro
         mean(x -> x.second[2], precision_recall_per_class)
     elseif weight == :weighted
-        mean(x -> x.second[2] * x.second[3]/length(gold), precision_recall_per_class)
+        mean(x -> x.second[2] * x.second[3] / length(gold), precision_recall_per_class)
     elseif :micro
         recall
     else
@@ -34,7 +34,7 @@ function precision(gold, predict; weight=:macro)::Float64
     if weight == :macro
         mean(x -> x.second[1], precision_recall_per_class)
     elseif weight == :weighted
-        mean(x -> x.second[1] * x.second[3]/length(gold), precision_recall_per_class)
+        mean(x -> x.second[1] * x.second[3] / length(gold), precision_recall_per_class)
     elseif weight == :micro
         precision
     else
@@ -91,10 +91,10 @@ function precision_recall(gold, predicted)
         tn_ += tp
         fn_ += tp
         fp_ += tp
-        M[label] = (tp / (tp + fp), tp/(tp + fn), sum(lgold) |> Int)  # precision, recall, class-population
+        M[label] = (tp / (tp + fp), tp / (tp + fn), sum(lgold) |> Int)  # precision, recall, class-population
     end
 
-    tp_ / (tp_ + fp_), tp_/(tp_ + fn_), M
+    tp_ / (tp_ + fp_), tp_ / (tp_ + fn_), M
 end
 
 function accuracy(gold, predicted)

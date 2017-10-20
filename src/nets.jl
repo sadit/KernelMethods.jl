@@ -223,10 +223,10 @@ function dnet(N::Net,num_of_elements::Int64; distance=L2SquaredDistance(),kernel
     lK,partitions,references=[[] for i in 1:n],[0 for i in 1:n],[]
     dists,sigmas=[],Dict()
     while 0 in partitions
-        pending=[j for (j,v) in enumerate(partitions) if partitions[j]==0]
+        pending=[j for (j, v) in enumerate(partitions) if partitions[j]==0]
         s=rand(pending)
         partitions[s]=s
-        pending=[j for (j,v) in enumerate(partitions) if partitions[j]==0]
+        pending=[j for (j, v) in enumerate(partitions) if partitions[j]==0]
         push!(references,s)
         pc=sortperm([d(N.data[j],N.data[s]) for j in pending])
         if length(pc)>=k
