@@ -14,33 +14,38 @@
 
 export GaussianKernel
 
-using Distributions
+# using Distributions
 
 struct GaussianKernel <: NaiveBayesKernel
-    mean_given_y::Vector{Float64}
-    var_given_y::Vector{Float64}
+    mean_given_y::Matrix{Float64}
+    var_given_y::Matrix{Float64}
 end
 
 function GaussianKernel(X::AbstractVector{ItemType}, y::AbstractVector{Int}, nlabels::Int) where ItemType
     dim = length(X[1])
-    C = zeros(Float64, nlabels)
-    CC = zeros(Float64, nlabels)
+    occ = ones(Float64, dim, nlabels)
+    C = zeros(Float64, dim, nlabels)
+    V = zeros(Float64, dim, nlabels)
     α = 1 / length(X)
 
     # we estimate our μ and ρ^2 using sample estimators, because it is fast and we expect
     # to have a bunch of examples (hundreds-thousands-millions)
     @inbounds for i in 1:length(X)
         label = y[i]
-        for x in X[i]
-            C[label] += x * α  # performing here the product α we can prevent some weird floating point errors
-            CC[label] += x * x * α
+        for (j, x) in enumerate(X[i])
+            # x = vec[j]
+            C[j, label] += x 
+            V[j, label] += x * x
+            occ[j, label] += 1
         end
     end
 
-    CC[:] -= C[:]  # WARNING floating point computation can produce very small values when C and CC are similar
-    # @assert sum(CC) > 0
-
-    GaussianKernel(C, CC)
+    C = C ./ occ
+    V = V ./ occ
+    V[:] -= C[:]  # WARNING floating point computation can produce very small values when C and V are similar
+    V = abs.(V)
+    # @assert sum(V) > 0
+    GaussianKernel(C, V)
 end
 
 function kernel_prob(nbc::NaiveBayesClassifier, kernel::GaussianKernel, x::AbstractVector{Float64})::Vector{Float64}
@@ -49,11 +54,11 @@ function kernel_prob(nbc::NaiveBayesClassifier, kernel::GaussianKernel, x::Abstr
     @inbounds for i in 1:n
         pxy = 1.0
         py = nbc.probs[i]
-        var2 = 2 * kernel.var_given_y[i]
-        a = 1 / sqrt(pi * var2)
-
         for j in 1:length(x)
-            pxy *= a * exp(-(x[j] - kernel.mean_given_y[i])^2 / var2)
+            var2 = 2 * kernel.var_given_y[j, i]
+            a = 1 / sqrt(pi * var2)
+            # a = 1/sqrt(pi * abs(var2))
+            pxy *= a * exp(-(x[j] - kernel.mean_given_y[j, i])^2 / var2)
         end
         scores[i] = py * pxy
     end

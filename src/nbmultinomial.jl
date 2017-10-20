@@ -15,17 +15,17 @@
 export MultinomialKernel
 
 mutable struct MultinomialKernel <: NaiveBayesKernel
-    acc_given_y::Vector{Float64}
+    acc_given_y::Matrix{Float64}
     smoothing::Float64
 end
 
 function MultinomialKernel(X::AbstractVector{ItemType}, y::AbstractVector{Int}, nlabels::Int; smoothing::Float64=0.0) where ItemType
-    C = zeros(Float64, nlabels)
+    C = zeros(Float64, length(X[1]), nlabels)
 
     @inbounds for i in 1:length(X)
         label = y[i]
-        for x in X[i]
-            C[label] += x
+        for (j, x) in enumerate(X[i])
+            C[j, label] += x
         end
     end
 
@@ -36,10 +36,10 @@ function kernel_prob(nbc::NaiveBayesClassifier, kernel::MultinomialKernel, x::Ab
     n = length(nbc.le.labels)
     scores = zeros(Float64, n)
     for i in 1:n
-        den = kernel.acc_given_y[i] + kernel.smoothing * n
         pxy = 1.0
         py = nbc.probs[i]
         for j in 1:length(x)
+            den = kernel.acc_given_y[j, i] + kernel.smoothing * n
             pxy *= (x[j] + kernel.smoothing) / den
         end
         scores[i] = py * pxy

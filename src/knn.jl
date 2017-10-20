@@ -65,7 +65,7 @@ function predict_one(nnc::NearNeighborClassifier{IndexType,LabelType}, item) whe
     inverse_transform(nnc.le, i)
 end
 
-function predict_one_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, item; smoothing=0.1) where {IndexType,LabelType}
+function predict_one_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, item; smoothing=0.0) where {IndexType,LabelType}
     w = _predict_one(nnc, item)
     t = sum(w)
 
