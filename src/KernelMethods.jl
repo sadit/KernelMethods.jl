@@ -17,5 +17,7 @@ module KernelMethods
 include("scores.jl")
 include("cv.jl")
 include("supervised.jl")
+include("kernels.jl")
+include("nets.jl")
 
 end
