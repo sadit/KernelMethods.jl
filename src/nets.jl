@@ -17,7 +17,7 @@ export Net, enet, kmnet, dnet, gen_features, KernelClassifier
 import KernelMethods.Kernels: sigmoid, gaussian, linear, cuchy
 import KernelMethods.Scores: accuracy, recall
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict_one, predict_one_proba
-using SimilaritySearch
+using SimilaritySearch: KnnResult, L2Distance, L2SquaredDistance, CosineDistance, DenseCosine
 using TextModel
 using PyCall
 
@@ -301,11 +301,13 @@ function KlusterClassifier(Xe,Ye; op_function=recall,
                         compute_net(N,k,kernel=kernel,distance=distanceN)
                         X=gen_features(N.data,N)
                     end
+
+                    kernelname=split(string(Symbol(kernel)),".")[3]
                     for (kd,distance) in distances 
                         nnc = NearNeighborClassifier(X,Ye, distance)
-                        opval,kknn,w=optimize!(nnc, op_function,runs=runs, trainratio=trainratio, 
+                        opval,_tmp=optimize!(nnc, op_function,runs=runs, trainratio=trainratio, 
                                                testratio=testratio,folds=folds)[1]
-                        kernelname=split(string(Symbol(kernel)),".")[3]
+                        kknn,w = _tmp
                         key="$nettype/$kernelname/$k/KNN$kknn/$kd"
                         push!(top,(opval,key))
                         DNNC[key]=(nnc,N)
