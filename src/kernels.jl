@@ -1,40 +1,27 @@
 module Kernels
-export linear, maxk, cuchy, gaussian, sigmoid
+export linear, maxk, cauchy, gaussian, sigmoid
 
 using SimilaritySearch
 using TextModel
 using JSON
 
-function linear(xo,xm;sigma=1,distance=L2SquaredDistance())
-    d=distance
-    return d(xo,xm)
-end
+linear(xo,xm;sigma=1,distance=L2SquaredDistance())=distance(xo,xm)
 
-function maxk(xo,xm;sigma=1,distance=L2SquaredDistance())
-    d=distance
-    sim = d(xo,xm) > sigma ? 1.0 : 0.0 
-    return sim
-end
+maxk(xo,xm;sigma=1,distance=L2SquaredDistance())=distance(xo,xm) > sigma ? 1.0 : 0.0
 
 function gaussian(xo,xm; sigma=1,distance=L2SquaredDistance())
-    sim=exp(-distance(xo,xm)/(2*sigma))
-    sim = isnan(sim) ? 0 : sim
-    sim = isinf(sim) ? -1: sim
-    return sim
+    d=distance(xo,xm)
+    (d==0 || sigma==0) && return 1.0
+    exp(-d/(2*sigma))
 end
 
-function sigmoid(xo,xm; sigma=1, distance=L2SquaredDistance())
-    sim=2*sqrt(sigma)/(1+exp(-distance(xo,xm)))
-    sim = isnan(sim) ? 0 : sim
-    sim = isinf(sim) ? -1: sim
-    return sim
-end
+sigmoid(xo,xm; sigma=1, distance=L2SquaredDistance())=2*sqrt(sigma)/(1+exp(-distance(xo,xm)))
 
-function cuchy(xo,xm; sigma=1,distance=L2SquaredDistance())
-    sim=1/(1+distance(xo,xm)/sigma*sigma)
-    sim = isnan(sim) ? 0 : sim
-    sim = isinf(sim) ? -1: sim
-    return sim
+
+function cauchy(xo,xm; sigma=1,distance=L2SquaredDistance())
+    d=distance(xo,xm)
+    (d==0 || sigma==0) && return 1.0
+    1/(1+d/(sigma*sigma))
 end
 end
 

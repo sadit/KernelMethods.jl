@@ -14,12 +14,13 @@
 
 module Nets
 export Net, enet, kmnet, dnet, gen_features, KernelClassifier
-import KernelMethods.Kernels: sigmoid, gaussian, linear, cuchy
+import KernelMethods.Kernels: sigmoid, gaussian, linear, cauchy
 import KernelMethods.Scores: accuracy, recall
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict_one, predict_one_proba
-using SimilaritySearch: KnnResult, L2Distance, L2SquaredDistance, CosineDistance, DenseCosine
+using SimilaritySearch: KnnResult, L2Distance, L2SquaredDistance, CosineDistance, DenseCosine, JaccardDistance
 using TextModel
 using PyCall
+import PyCall: PyObject
 
 @pyimport sklearn.naive_bayes as nb
 @pyimport sklearn.model_selection as ms
@@ -29,7 +30,7 @@ using PyCall
 
 type Net
     data::Vector{Vector{Float64}}
-    labels::Vector{Any}
+    labels::Vector{Int}
     references::Vector{Int32}
     partitions::Vector{Int32}
     centers::Vector{Vector{Float64}}
@@ -43,17 +44,17 @@ type Net
     kernel
 end
 
-Net(data,labels)=Net(data,labels,[],[],[],[],[],[],Dict(),Dict(),
+Net(data,labels)::Net=Net(data,labels,[],[],[],[],[],[],Dict(),Dict(),
                      :centroids,L2SquaredDistance(),gaussian)
 
-function cosine(x1,x2)
+function cosine(x1,x2)::Float64
     xc1=DenseCosine(x1)
     xc2=DenseCosine(x2)
     d=CosineDistance()
     return d(xc1,xc2)
 end
 
-function maxmin(data,centers,ind,index::KnnResult,distance,partitions,lK)
+function maxmin(data,centers,ind,index::KnnResult,distance,partitions)::Tuple{Int64,Float64}
     c=last(centers)
     if length(index)==0
         for i in ind
@@ -65,7 +66,7 @@ function maxmin(data,centers,ind,index::KnnResult,distance,partitions,lK)
     nindex=KnnResult(length(index))
     for fn in index
         dist=distance(data[fn.objID],data[c])
-        push!(lK[fn.objID],dist)
+        #push!(lK[fn.objID],dist)
         dist = if (dist<fn.dist) dist else fn.dist end
         partitions[fn.objID] = if (dist<fn.dist) c else partitions[fn.objID] end
         if fn.objID!=c
@@ -78,7 +79,7 @@ function maxmin(data,centers,ind,index::KnnResult,distance,partitions,lK)
     return fn.objID,fn.dist
 end
 
-function get_centroids(data,partitions)
+function get_centroids(data,partitions)::Vector{Vector{Float64}}
     centroids=[]
     centers=sort([j for j in Set(partitions)])
     for c in centers
@@ -95,7 +96,7 @@ function enet(N::Net,num_of_centers::Int64; distance=L2SquaredDistance(),
     N.distance=distance
     N.kernel=kernel
     n=length(N.data)
-    lK,partitions=[[] for i in 1:n],[0 for i in 1:n]
+    partitions=[0 for i in 1:n]
     gcenters,dists,sigmas=[],[],Dict()
     indices=[[i for i in  1:n]]
     for ind in indices
@@ -107,7 +108,7 @@ function enet(N::Net,num_of_centers::Int64; distance=L2SquaredDistance(),
         partitions[ind[s]]=ind[s]
         k=1
         while  k<=num_of_centers-1 && k<=length(ind)
-            fnid,d=maxmin(N.data,centers,ind,index,distance,partitions,lK)
+            fnid,d=maxmin(N.data,centers,ind,index,distance,partitions)
             push!(centers,fnid)
             push!(dists,d)
             partitions[fnid]=fnid
@@ -157,7 +158,7 @@ end
 
 #Distances for each element to its nearest cluster centroid
 
-function get_distances(data,centroids,partitions;distance=L2SquaredDistance())
+function get_distances(data,centroids,partitions;distance=L2SquaredDistance())::Vector{Float64}
     dists=[]
     for i in 1:length(centroids)
         ind=[j for (j,l) in enumerate(partitions) if l==i]
@@ -173,7 +174,7 @@ end
 
 #Calculated the sigma for each ball
 
-function get_csigmas(data,centroids,partitions;distance=L2SquaredDistance())
+function get_csigmas(data,centroids,partitions;distance=L2SquaredDistance())::Tuple{Vector{Float64},Dict{String,Float64}}
     csigmas,stats=[],Dict("SSE"=>0.0,"BSS"=>0.0)
     refs=sort([j for j in Set(partitions)])
     df=distance
@@ -193,9 +194,10 @@ end
 
 #Feature generator using kmeans centroids
 
-function kmnet(N::Net,num_of_centers::Int64; max_iter=1000,kernel=linear,distance=L2SquaredDistance())
+function kmnet(N::Net,num_of_centers::Int64; max_iter=1000,kernel=linear,distance=L2SquaredDistance(),reftype=:centroids)
     n=length(N.data)
-    lK,partitions=[[] for i in 1:n],[0 for i in 1:n],[0 for i in 1:n]
+    #lK,partitions=[[] for i in 1:n],[0 for i in 1:n],[0 for i in 1:n]
+    partitions=[0 for i in 1:n]
     dists,sigmas=[],Dict()
     init=kmpp(N,num_of_centers)
     centroids=N.data[init]
@@ -218,9 +220,9 @@ end
 
 #Feature generator using naive algoritmh for density net
 
-function dnet(N::Net,num_of_elements::Int64; distance=L2SquaredDistance(),kernel=linear)
+function dnet(N::Net,num_of_elements::Int64; distance=L2SquaredDistance(),kernel=linear,reftype=:centroids)
     n,d,k=length(N.data),distance,num_of_elements
-    lK,partitions,references=[[] for i in 1:n],[0 for i in 1:n],[]
+    partitions,references=[0 for i in 1:n],[]
     dists,sigmas=[],Dict()
     while 0 in partitions
         pending=[j for (j,v) in enumerate(partitions) if partitions[j]==0]
@@ -239,14 +241,14 @@ function dnet(N::Net,num_of_elements::Int64; distance=L2SquaredDistance(),kernel
     N.centers,N.centroids=N.data[references],get_centroids(N.data,partitions)
     N.csigmas,N.stats=get_csigmas(N.data,N.centroids,N.partitions,distance=N.distance)
     N.sigmas[0]=maximum(N.csigmas)
-    N.reftype=:centroid
+    N.reftype=:centroids
     N.distance=distance
     N.kernel=kernel
 end
 
 #Generates feature espace using cluster centroids or centers
 
-function gen_features(Xo,N::Net)
+function gen_features(Xo,N::Net)::Vector{Vector{Float64}}
     sigmas,Xr=N.csigmas,[]
     Xm = N.reftype==:centroids || length(N.centers)==0 ? N.centroids : N.centers 
     nc=length(Xo)
@@ -262,8 +264,8 @@ function gen_features(Xo,N::Net)
 end
 
 
-function traintest(N;op_function=recall,runs=3,folds=0,trainratio=0.7,testratio=0.3)
-    clf,avg=nb.GaussianNB(),0 
+function traintest(N;op_function=recall,runs=3,folds=0,trainratio=0.7,testratio=0.3)::Tuple{PyObject,Float64}
+    clf,avg=nb.GaussianNB(),[]
     skf=ms.ShuffleSplit(n_splits=runs,train_size=trainratio
                                ,test_size=testratio)
     X=gen_features(N.data,N)
@@ -275,64 +277,133 @@ function traintest(N;op_function=recall,runs=3,folds=0,trainratio=0.7,testratio=
         yt,yv=y[ei],y[vi]
         clf[:fit](xt,yt)
         y_pred=clf[:predict](xv)
-        avg+=op_function(yv,y_pred)
+        push!(avg,op_function(yv,y_pred))
     end
     #println("========== ",length(N.centroids) ,"  ",avg/folds)
+    #@show typeof(clf)
     clf[:fit](X,y)
-    return clf,avg/runs
+    return clf,mean(avg)
 end
 
 
+function transductive(){
+    continue    
+}
+
 function KlusterClassifier(Xe,Ye; op_function=recall, 
-                           K=[4,8,16,32],
-                           kernels=[gaussian,sigmoid,linear],
-                           runs=3, trainratio=0.6, testratio=0.4,folds=0)
+                        K=[4,8,16,32],
+                        kernels=[:gaussian,:sigmoid,:linear,:cauchy],
+                        runs=3, trainratio=0.6, testratio=0.4,folds=0,
+                        top_k=32,threshold=0.03,distances=[:cosine,:L2SquaredDistance] 
+                        nets=[:enet,:kmnet,:dnet],nsplits=3)::Vector{Tuple{Tuple{Any,Net},Float64,String}}
     top=[]
     DNNC=Dict()
-    distances=[("L2",L2SquaredDistance()),("cosine",cosine)]
     for k in K
-        for (nettype,compute_net) in ["epsilon"=>enet,"kmeans"=>kmnet,"density"=>dnet]
-            for kernel in kernels
-                for (distancek,distanceN) in distances
-                    if distancek=="cosine" && nettype=="kmeans"
-                        continue
-                    else
-                        N=Net(Xe,Ye)
-                        compute_net(N,k,kernel=kernel,distance=distanceN)
-                        X=gen_features(N.data,N)
-                    end
-
-                    kernelname=split(string(Symbol(kernel)),".")[3]
-                    for (kd,distance) in distances 
-                        nnc = NearNeighborClassifier(X,Ye, distance)
-                        opval,_tmp=optimize!(nnc, op_function,runs=runs, trainratio=trainratio, 
-                                               testratio=testratio,folds=folds)[1]
-                        kknn,w = _tmp
-                        key="$nettype/$kernelname/$k/KNN$kknn/$kd"
-                        push!(top,(opval,key))
+        for nettype in nets
+            for reftype in [:centers,:centroids]
+                for kernel in kernels
+                    for distancek in distances
+                        if (!contains(distancek,"L2") || reftype==:centers) && nettype=="kmeans"
+                            continue
+                        else
+                            N=Net(Xe,Ye)
+                            eval(nettype)(N,k,kernel=eval(kernel),distance=distanceN,reftype=reftype)
+                            X=gen_features(N.data,N)
+                        end
+                        for (kd,distance) in distances 
+                            nnc = NearNeighborClassifier(X,Ye, distance)
+                            opval,_tmp=optimize!(nnc, op_function,runs=runs, trainratio=trainratio, 
+                                                 testratio=testratio,folds=folds)[1]
+                            kknn,w = _tmp
+                            key="$nettype/$kernel/$k/KNN$kknn/$reftype/$kd/$w"
+                            push!(top,(opval,key))
                         DNNC[key]=(nnc,N)
+                        end
+                        key="$nettype/$kernel/$k/NaiveBayes/$reftype/NA"
+                        nbc,opval=traintest(N,op_function=op_function,folds=folds,
+                                            trainratio=trainratio,testratio=testratio)
+                        push!(top,(opval,key))
+                        DNNC[key]=(nbc,N)   
                     end
-                    key="$nettype/$kernelname/$k/NaiveBayes"
-                    nbc,opval=traintest(N,op_function=op_function,folds=folds,
-                        trainratio=trainratio,testratio=testratio)
-                    push!(top,(opval,key))
-                    DNNC[key]=(nbc,N)   
                 end
             end
         end
     end
-    top=sort(top,rev=true)[1:10]
+    top=sort(top,rev=true)[1:12]
+    # if top_k>0
+    #     top=ctop[1:k]
+    # else
+    #     top=[t for t in top if (ctop[1][1]-t[1])<threshold]
+    # end
+    # @show length(top)
     LN=[(DNNC[t[2]],t[1],t[2]) for t in top ]
+    #@show typeof(LN)
 end
 
-function predict(knc,X;ensemble_k=1)
+function predict_test(xt,y,xv,desc,cl)::Vector{Int64}
+    y_pred=[]          
+    if contains(desc,"KNN")
+        #@show typeof(xt), typeof(y), typeof(cl.X.dist), Symbol(cl.X.dist)
+        cln=NearNeighborClassifier(xt,y,cl.X.dist,cl.k,cl.weight)  
+        y_pred=[predict_one(cln,x)[1] for x in xv]
+    else
+        cln=nb.GaussianNB()
+        cln[:fit](xt,y)
+        y_pred=cln[:predict](xv) 
+    end 
+    y_pred
+end
+
+HammingDistance(x1,x2)::Float64 = length(x1)-sum(x1.==x2)
+
+function ensemble_cfft(knc,k::Int64=7;testratio=0.4,distance=HammingDistance)::Vector{Tuple{Tuple{Any,Net},Float64,String}}
+    (cl,n),opv,desc=knc[1] 
+    data=[]
+    for i in 1:length(knc)
+        kc,opv,desc=knc[i]
+        v=split(desc,"/")[1:6]
+        push!(data,v)
+    end
+    ind=[i for (i,x) in enumerate(data)]
+    partitions,centers,index=[0 for x in ind],[1],KnnResult(k)
+    while length(centers)<k && length(centers)<=length(ind) 
+        oid,dist=maxmin(data,centers,ind,index,distance,partitions)
+        push!(centers,oid)  
+    end
+    knc[centers]
+end
+
+
+function ensemble_pfft(knc,k::Int64=7;trainratio=0.6,distance=HammingDistance)::Vector{Tuple{Tuple{Any,Net},Float64,String}}
+    (cl,N),opv,desc=knc[1] 
+    n,data=length(N.data),[]
+    tn=Int(trunc(n*trainratio));
+    perm=randperm(n)
+    ti,vi=perm[1:tn],perm[tn+1:n] 
+    for i in 1:length(knc)
+        (cl,N),opv,desc=knc[i]
+        xv=gen_features(N.data[vi],N)
+        xt=gen_features(N.data[ti],N)
+        y=N.labels[ti]
+        push!(data,predict_test(xt,y,xv,desc,cl))
+    end
+    ind=[i for (i,x) in enumerate(data)]
+    partitions,centers,index=[0 for x in ind],[1],KnnResult(k)
+    while length(centers)<k && length(centers)<=length(ind) 
+        oid,dist=maxmin(data,centers,ind,index,distance,partitions)
+        push!(centers,oid)  
+    end
+    knc[centers]
+end
+
+function predict(knc,X;ensemble_k=1)::Vector{Int64}
     y_t=[]
     for i in 1:ensemble_k
-        kc,opv,desc=knc[i]  
+        kc,opv,desc=knc[i]
         cl,N=kc
         xv=gen_features(X,N)       
         if contains(desc,"KNN")  
-            y_i=[predict_one(cl,x)[1].first for x in xv]
+            y_i=[predict_one(cl,x)[1] for x in xv]
         else
             y_i=cl[:predict](xv) 
         end 
@@ -346,7 +417,7 @@ function predict(knc,X;ensemble_k=1)
     y_pred
 end
 
-function predict_proba(knc,X;ensemble_k=1)
+function predict_proba(knc,X;ensemble_k=1):Vector{Vector{Float64}}
     kc,opv,desc=knc[1]
     cl,N=kc
     xv=gen_features(X,N)
