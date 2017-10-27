@@ -26,25 +26,25 @@ function GaussianKernel(X::AbstractVector{ItemType}, y::AbstractVector{Int}, nla
     occ = ones(Float64, dim, nlabels)
     C = zeros(Float64, dim, nlabels)
     V = zeros(Float64, dim, nlabels)
-    α = 1 / length(X)
+    # α = 1 / length(X)
 
-    # we estimate our μ and ρ^2 using sample estimators, because it is fast and we expect
-    # to have a bunch of examples (hundreds-thousands-millions)
     @inbounds for i in 1:length(X)
         label = y[i]
         for (j, x) in enumerate(X[i])
-            # x = vec[j]
-            C[j, label] += x 
-            V[j, label] += x * x
+            C[j, label] += x
             occ[j, label] += 1
         end
     end
-
     C = C ./ occ
+
+    @inbounds for i in 1:length(X)
+        label = y[i]
+        for (j, x) in enumerate(X[i])
+           V[j, label] += (x - C[j, label])^2
+        end
+    end
+
     V = V ./ occ
-    V[:] -= C[:]  # WARNING floating point computation can produce very small values when C and V are similar
-    V = abs.(V)
-    # @assert sum(V) > 0
     GaussianKernel(C, V)
 end
 

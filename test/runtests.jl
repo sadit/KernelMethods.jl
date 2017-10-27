@@ -66,27 +66,28 @@ end
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.95
     @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
+    @show optimize!(nnc, accuracy, folds=5)
     @test sum([maximum(x) for x in predict_proba(nnc, X, smoothing=0)])/ length(X) > 0.9 ## close to have all ones, just in case
     @test sum([maximum(x) for x in predict_proba(nnc, X, smoothing=0.01)])/ length(X) > 0.9 ## close to have all ones, just in case
 end
 
 
-@testset "KlusterClassifier" begin
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
-    filename = basename(url)
-    if !isfile(filename)
-        download(url, filename)
-    end
-    data = readcsv(filename)
-    X = data[:, 1:4]
-    X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
-    y = String.(data[:, 5])
-    kc = KlusterClassifier(X,y)
-    println("################ ", [opv for (c,opv) in kc])
-    @test kc[1][2]>0.9
-end
+# @testset "KlusterClassifier" begin
+#     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
+#     filename = basename(url)
+#     if !isfile(filename)
+#         download(url, filename)
+#     end
+#     data = readcsv(filename)
+#     X = data[:, 1:4]
+#     X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
+#     y = String.(data[:, 5])
+#     kc = KlusterClassifier(X,y)
+#     println("################ ", [opv for (c,opv) in kc])
+#     @test kc[1][2]>0.9
+# end
 
-#= @testset "NB" begin
+@testset "NB" begin
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
     filename = basename(url)
     if !isfile(filename)
@@ -97,11 +98,11 @@ end
     X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
     y = String.(data[:, 5])
     nbc = NaiveBayesClassifier(X, y)
-    @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.2, testratio=0.2)
-    @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.3, testratio=0.3)
-    @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.5, testratio=0.5)
+    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.2, testratio=0.2)[1][1] > 0.8
+    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.3, testratio=0.3)[1][1] > 0.8
+    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.5, testratio=0.5)[1][1] > 0.9
+    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)[1][1] > 0.9
     @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)
-
     # @test optimize!(nbc, accuracy, folds=2)[1][2] > 0.9
     # @test optimize!(nbc, accuracy, folds=3)[1][2] > 0.9
     # @test optimize!(nbc, accuracy, folds=5)[1][2] > 0.95
@@ -109,4 +110,4 @@ end
     # @test sum([maximum([i.second for i in x]) for x in predict_proba(nbc, X, smoothing=0)]) / length(X) > 0.9 ## close to have all ones, just in case
     # @test sum([maximum([i.second for i in x]) for x in predict_proba(nbc, X, smoothing=0.01)]) / length(X) > 0.9
 end
- =#
+

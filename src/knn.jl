@@ -18,7 +18,7 @@ mutable struct NearNeighborClassifier{IndexType,LabelType}
     X::IndexType
     y::Vector{Int}
     k::Int
-    le::LabelEncoder
+    le::LabelEncoder{LabelType}
     weight
 end
 

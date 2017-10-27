@@ -61,7 +61,7 @@ function optimize!(nbc::NaiveBayesClassifier{ItemType,LabelType}, X::AbstractVec
     mem = Dict{Any,Float64}()
     function f(train_X, train_y, test_X, test_y)
         tmp = NaiveBayesClassifier(train_X, train_y, kernel=MultinomialKernel)
-        for smoothing in [0.0, 0.03, 0.1, 0.3, 1.0]
+        for smoothing in [0.0, 0.1, 0.3, 1.0]
             tmp.kernel.smoothing = smoothing
             pred_y = predict(tmp, test_X)
             score = scorefun(test_y, pred_y)

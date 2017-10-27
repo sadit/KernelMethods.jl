@@ -14,7 +14,7 @@
 
 module Nets
 export Net, enet, kmnet, dnet, gen_features, KernelClassifier
-import KernelMethods.Kernels: sigmoid, gaussian, linear, cuchy
+import KernelMethods.Kernels: sigmoid, gaussian, linear, cauchy
 import KernelMethods.Scores: accuracy, recall
 import KernelMethods.Supervised: NearNeighborClassifier, optimize!, predict_one, predict_one_proba
 using SimilaritySearch: KnnResult, L2Distance, L2SquaredDistance, CosineDistance, DenseCosine
@@ -27,9 +27,9 @@ using PyCall
 #using JSON
 #using DataStructures
 
-type Net
+mutable struct Net{LabelType}
     data::Vector{Vector{Float64}}
-    labels::Vector{Any}
+    labels::Vector{LabelType}
     references::Vector{Int32}
     partitions::Vector{Int32}
     centers::Vector{Vector{Float64}}
@@ -123,7 +123,7 @@ function enet(N::Net,num_of_centers::Int64; distance=L2SquaredDistance(),
 end
 
 
-# KMeans ++ seeding Algorithm 
+# KMeans ++ seeding Algorithm
 
 function kmpp(N::Net,num_of_centers::Int64)
     n=length(N.data)
@@ -248,11 +248,11 @@ end
 
 function gen_features(Xo,N::Net)
     sigmas,Xr=N.csigmas,[]
-    Xm = N.reftype==:centroids || length(N.centers)==0 ? N.centroids : N.centers 
-    nc=length(Xo)
-    kernel=N.kernel
+    Xm = N.reftype == :centroids || length(N.centers)==0 ? N.centroids : N.centers 
+    nc = length(Xo)
+    kernel = N.kernel
     for xi in Xo
-        xd=[]
+        xd = Float64[]
         for (j,x) in enumerate(Xm)
             push!(xd, kernel(xi,x,sigma=sigmas[j],distance=N.distance))
         end
@@ -264,8 +264,7 @@ end
 
 function traintest(N;op_function=recall,runs=3,folds=0,trainratio=0.7,testratio=0.3)
     clf,avg=nb.GaussianNB(),0 
-    skf=ms.ShuffleSplit(n_splits=runs,train_size=trainratio
-                               ,test_size=testratio)
+    skf=ms.ShuffleSplit(n_splits=runs,train_size=trainratio,test_size=testratio)
     X=gen_features(N.data,N)
     y=N.labels
     skf[:get_n_splits](X,y)
