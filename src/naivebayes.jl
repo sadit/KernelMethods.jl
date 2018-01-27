@@ -25,7 +25,7 @@ end
 include("nbgaussian.jl")
 include("nbmultinomial.jl")
 
-function NaiveBayesClassifier(X::AbstractVector{ItemType}, y::AbstractVector{LabelType}; kernel=GaussianKernel) where {ItemType, LabelType}
+function NaiveBayesClassifier(X::AbstractVector{ItemType}, y::AbstractVector{LabelType}; kernel=GaussianKernel) where {ItemType,LabelType}
     le = LabelEncoder(y)
     y_ = transform.(le, y)
     probs = Float64[freq/length(y) for freq in le.freqs]

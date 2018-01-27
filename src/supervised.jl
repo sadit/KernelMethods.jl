@@ -20,4 +20,5 @@ module Supervised
     include("labelencoder.jl")
     include("knn.jl")
     include("naivebayes.jl")
+
 end
