@@ -17,7 +17,7 @@ import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
 import KernelMethods.CrossValidation: montecarlo, kfolds
 import KernelMethods.Supervised: NearNeighborClassifier, NaiveBayesClassifier, optimize!, predict, predict_proba, transform, inverse_transform
 import SimilaritySearch: L2Distance
-import KernelMethods.Nets: KlusterClassifier
+# import KernelMethods.Nets: KlusterClassifier
 using Base.Test
 
 
