@@ -18,5 +18,6 @@ include("scores.jl")
 include("cv.jl")
 include("kernels.jl")
 include("supervised.jl")
-include("nets.jl")
+include("kmap/kmap.jl")
+# include("nets.jl")
 end
