@@ -28,46 +28,94 @@ function loadiris()
 end
 
 @testset "encode by farthest points" begin
-    using KernelMethods.Kernels: gaussian_kernel
-    using KernelMethods.KMap: farthest_points, sqrt_criterion, change_criterion, log_criterion, kmap
+    using KernelMethods.KMap: fftraversal, sqrt_criterion, change_criterion, log_criterion, kmap
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
     using SimilaritySearch: L2Distance
+    using KernelMethods.Kernels: gaussian_kernel
 
     X, y = loadiris()
     dist = L2Distance()
     # criterion = change_criterion(0.01)
-    criterion = sqrt_criterion()
-    farlist, dmaxlist, faridxlist = farthest_points(X, dist, criterion)
-    g = gaussian_kernel(dist, dmaxlist[end]/2)
-    M = kmap(X, g, farlist)
+    refs = Vector{typeof(X[1])}()
+    dmax = 0.0
+    function callback(c, _dmax)
+        push!(refs, X[c])
+        dmax = _dmax
+    end
+
+    fftraversal(callback, X, dist, sqrt_criterion())
+    g = gaussian_kernel(dist, dmax/2)
+    M = kmap(X, g, refs)
     nnc = NearNeighborClassifier(M, y, L2Distance())
-    
+
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
-    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.95
-    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
+    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93
+    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.93
     @show optimize!(nnc, accuracy, folds=5)
 end
 
 @testset "Clustering and centroid computation (with cosine)" begin
-    using KernelMethods.KMap: farthest_points, sqrt_criterion, invindex, centroid
+    using KernelMethods.KMap: fftraversal, sqrt_criterion, invindex, centroid
     using SimilaritySearch: L2Distance, L1Distance
     using SimilaritySearch: CosineDistance, DenseCosine
     X, y = loadiris()
     dist = L2Distance()
-    farlist, dmaxlist, faridxlist = farthest_points(X, dist, sqrt_criterion())
-    a = [centroid(X[plist]) for plist in invindex(X, dist, farlist)]
-    g = gaussian_kernel(dist, dmaxlist[end]/4)
+    refs = Vector{typeof(X[1])}()
+    dmax = 0.0
+
+    function callback(c, _dmax)
+        push!(refs, X[c])
+        dmax = _dmax
+    end
+
+    fftraversal(callback, X, dist, sqrt_criterion())
+    a = [centroid(X[plist]) for plist in invindex(X, dist, refs)]
+    g = gaussian_kernel(dist, dmax/4)
     M = kmap(X, g, a)
     nnc = NearNeighborClassifier([DenseCosine(w) for w in M], y, CosineDistance())
-    
+
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
-    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.95
-    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.95
+    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93
+    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.93
     @show optimize!(nnc, accuracy, folds=10)
 end
+
+@testset "encode with dnet" begin
+    using KernelMethods.KMap: dnet, sqrt_criterion, change_criterion, log_criterion, kmap
+    using KernelMethods.Scores: accuracy
+    using KernelMethods.Supervised: NearNeighborClassifier, optimize!
+    using SimilaritySearch: L2Distance, LpDistance
+    using KernelMethods.Kernels: gaussian_kernel
+
+    X, y = loadiris()
+    dist = L2Distance()
+    # criterion = change_criterion(0.01)
+    refs = Vector{typeof(X[1])}()
+    dmax = 0.0
+
+    function callback(c, dmaxlist)
+        push!(refs, X[c])
+        dmax  += dmaxlist[end][end]
+    end
+
+    dnet(callback, X, dist, 7)
+    _dmax = dmax / length(refs)
+    info("final dmax: $(_dmax)")
+
+    g = gaussian_kernel(dist, _dmax)
+    M = kmap(X, g, refs)
+    nnc = NearNeighborClassifier(M, y, L2Distance())
+
+    @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93
+    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.93
+    @show optimize!(nnc, accuracy, folds=5)
+end
+
 # @testset "KlusterClassifier" begin
 #     X, y = loadiris()
 #     kc = KlusterClassifier(X,y)

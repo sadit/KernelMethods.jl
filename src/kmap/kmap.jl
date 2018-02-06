@@ -4,7 +4,8 @@ using SimilaritySearch:
 
 export kmap, centroid, partition, knearestreferences, sequence
 
-include("fft.jl")
+include("enet.jl")
+include("dnet.jl")
 include("criterions.jl")
 
 """
@@ -71,6 +72,7 @@ function knearestreferences(objects::AbstractVector{T}, dist, refs::AbstractVect
     partition((i, p) -> s[i] = [p.objID for p in res], objects, dist, refs, indexclass=indexclass)
     s
 end
+
 """
 Computes the centroid of the list of objects
 
@@ -84,7 +86,7 @@ function centroid(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: Abs
             u[j] += w[j]
         end
     end
-    
+
     f = 1.0 / length(objects)
     @inbounds for j in 1:length(u)
         u[j] *= f

@@ -1,10 +1,7 @@
 module Kernels
 
 export linear, maxk, cauchy, gaussian, sigmoid, gaussian_kernel, sigmoid_kernel, cauchy_kernel
-
 using SimilaritySearch
-using TextModel
-using JSON
 
 linear(xo, xm; sigma=1, distance=L2SquaredDistance()) = distance(xo,xm)
 
@@ -26,6 +23,9 @@ function cauchy(xo, xm; sigma=1, distance=L2SquaredDistance())
     1/(1+d/(sigma*sigma))
 end
 
+"""
+Creates a Gaussian kernel with the given `sigma`
+"""
 function gaussian_kernel(dist, sigma=1.0)
     sigma2 = sigma * 2
     function fun(obj, ref)::Float64
@@ -57,5 +57,3 @@ function cauchy_kernel(dist, sigma=1.0)
 end
 
 end
-
-
