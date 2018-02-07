@@ -55,6 +55,12 @@ function partition(callback::Function, objects::AbstractVector{T}, dist, refs::A
     end
 end
 
+"""
+Creates an inverted index from references to objects.
+So, an object \$u\$ is in \$r\$'s posting list iff \$r\$
+is among the \$k\$ nearest references of \$u\$.
+
+"""
 function invindex(objects::AbstractVector{T}, dist, refs::AbstractVector{T}; k::Int=1, indexclass=Sequential) where T
     π = [Vector{Int}() for i in 1:length(refs)]
     partition((i, p) -> push!(π[p.objID], i), objects, dist, refs, k=k, indexclass=indexclass)

@@ -32,7 +32,7 @@ end
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
     using SimilaritySearch: L2Distance
-    using KernelMethods.Kernels: gaussian_kernel
+    using KernelMethods.Kernels: gaussian_kernel, cauchy_kernel, sigmoid_kernel
 
     X, y = loadiris()
     dist = L2Distance()
@@ -45,7 +45,7 @@ end
     end
 
     fftraversal(callback, X, dist, sqrt_criterion())
-    g = gaussian_kernel(dist, dmax/2)
+    g = cauchy_kernel(dist, dmax/2)
     M = kmap(X, g, refs)
     nnc = NearNeighborClassifier(M, y, L2Distance())
 
@@ -88,7 +88,7 @@ end
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
     using SimilaritySearch: L2Distance, LpDistance
-    using KernelMethods.Kernels: gaussian_kernel
+    using KernelMethods.Kernels: gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel
 
     X, y = loadiris()
     dist = L2Distance()
@@ -101,14 +101,11 @@ end
         dmax  += dmaxlist[end][end]
     end
 
-    dnet(callback, X, dist, 7)
+    dnet(callback, X, dist, 14)
     _dmax = dmax / length(refs)
-    info("final dmax: $(_dmax)")
-
-    g = gaussian_kernel(dist, _dmax)
+    g = tanh_kernel(dist, _dmax)
     M = kmap(X, g, refs)
     nnc = NearNeighborClassifier(M, y, L2Distance())
-
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93

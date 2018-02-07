@@ -56,4 +56,12 @@ function cauchy_kernel(dist, sigma=1.0)
     end
 end
 
+function tanh_kernel(dist, sigma=1.0)
+    function fun(obj, ref)::Float64
+        x = dist(obj, ref)
+        (exp(x-sigma) - exp(-x+sigma)) / (exp(x-sigma) + exp(-x+sigma))
+    end
+end
+
+
 end
