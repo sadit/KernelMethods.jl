@@ -23,18 +23,21 @@ function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop) where
     end
 
     k::Int = 0
+    
     @inbounds while k <= N
         k += 1
         pivot = X[imax]
         push!(dmaxlist, dmax)
         callback(imax, dmax)
-        info("computing fartest point $k, dmax: $dmax")
+        info("computing fartest point $k, dmax: $dmax, imax: $imax")
         dmax = 0.0
+        imax = 0
         for i in 1:N
             d = dist(X[i], pivot)
             if d < dset[i]
                 dset[i] = d
             end
+
             if dset[i] > dmax
                 dmax = dset[i]
                 imax = i
