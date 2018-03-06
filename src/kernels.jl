@@ -63,5 +63,4 @@ function tanh_kernel(dist, sigma=1.0)
     end
 end
 
-
 end
