@@ -1,4 +1,4 @@
-# Copyright 2017 Eric S. Tellez
+# Copyright 2017,2018 Eric S. Tellez
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,14 @@ module Scores
 
 export accuracy, precision_recall, precision, recall, f1
 
+"""
+It computes the recall between the gold dataset and the list of predictions `predict`
+
+It applies the desired weighting scheme for binary and multiclass problems
+- `:macro` performs a uniform weigth to each class
+- `:weigthed` the weight of each class is proportional to its population in gold
+- `:micro` returns the global recall, without distinguishing among classes
+"""
 function recall(gold, predict; weight=:macro)::Float64
     precision, recall, precision_recall_per_class = precision_recall(gold, predict)
     if weight == :macro
@@ -29,6 +37,14 @@ function recall(gold, predict; weight=:macro)::Float64
     end
 end
 
+"""
+It computes the precision between the gold dataset and the list of predictions `predict`
+
+It applies the desired weighting scheme for binary and multiclass problems
+- `:macro` performs a uniform weigth to each class
+- `:weigthed` the weight of each class is proportional to its population in gold
+- `:micro` returns the global precision, without distinguishing among classes
+"""
 function precision(gold, predict; weight=:macro)::Float64
     precision, recall, precision_recall_per_class = precision_recall(gold, predict)
     if weight == :macro
@@ -42,6 +58,14 @@ function precision(gold, predict; weight=:macro)::Float64
     end
 end
 
+"""
+It computes the F1 score between the gold dataset and the list of predictions `predict`
+
+It applies the desired weighting scheme for binary and multiclass problems
+- `:macro` performs a uniform weigth to each class
+- `:weigthed` the weight of each class is proportional to its population in gold
+- `:micro` returns the global F1, without distinguishing among classes
+"""
 function f1(gold, predict; weight=:macro)::Float64
     precision, recall, precision_recall_per_class = precision_recall(gold, predict)
     if weight == :macro
@@ -55,6 +79,10 @@ function f1(gold, predict; weight=:macro)::Float64
     end
 end
 
+"""
+It computes the global and per-class precision and recall values between the gold standard
+and the predicted set
+"""
 function precision_recall(gold, predicted)
     labels = unique(gold)
     M = Dict{typeof(labels[1]), Tuple}()
@@ -97,6 +125,9 @@ function precision_recall(gold, predicted)
     tp_ / (tp_ + fp_), tp_ / (tp_ + fn_), M
 end
 
+"""
+It computes the accuracy score between the gold and the predicted sets
+"""
 function accuracy(gold, predicted)
     #  mean(gold .== predicted)
     c = 0
