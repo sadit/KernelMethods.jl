@@ -39,19 +39,20 @@ function search_model(X, y;
                 ),
                 kernels=[linear_kernel, gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel],
                 reftypes=[:centroids, :centers],
+                classifiers=[NearNeighborClassifier, NaiveBayesClassifier],
             )
 
     bestlist = []
     tabu = Set()
 
     for i in 1:size
-        m = (rand(distances), rand(kdistances), rand(kernels), rand(sampling), rand(reftypes))
+        m = (rand(distances), rand(kdistances), rand(kernels), rand(sampling), rand(reftypes), rand(classifiers))
         if m in tabu
             continue
         end
         push!(tabu, m)
 
-        _dist, _kdist, kernel, net, reftype = m
+        _dist, _kdist, kernel, net, reftype, classifier = m
         dist = _dist()
         kdist = _kdist()
         refs = Vector{typeof(X[1])}()
@@ -88,12 +89,17 @@ function search_model(X, y;
 
         if _kdist == CosineDistance
             nnc = NearNeighborClassifier(DenseCosine.(M), y, CosineDistance())
+            best = optimize!(nnc, score, folds=folds)[1]
         else
-            nnc = NearNeighborClassifier(M, y, kdist)
+            if classifier == NearNeighborClassifier
+                nnc = NearNeighborClassifier(M, y, kdist)
+                best = optimize!(nnc, score, folds=folds)[1]
+            else
+                nnc = NaiveBayesClassifier(M, y)
+                best = optimize!(nnc, M, y, score, folds=folds)[1]
+            end
         end
         
-
-        best = optimize!(nnc, score, folds=folds)[1]
         push!(bestlist, (best[1], nnc))
         sort!(bestlist, by=x->-x[1])
         if length(bestlist) > keep

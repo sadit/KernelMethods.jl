@@ -29,10 +29,10 @@ end
 
 @testset "encode by farthest points" begin
     using KernelMethods.KMap: search_model
-    using KernelMethods.Scores: accuracy
+    using KernelMethods.Scores: accuracy, recall
     using SimilaritySearch: L2Distance
     X, y = loadiris()
-    models = search_model(X, y, folds=5, keep=10, size=128, score=accuracy)
+    models = search_model(X, y, folds=5, keep=10, size=32, score=accuracy)
     @show [m[1] for m in models]
 end
 
