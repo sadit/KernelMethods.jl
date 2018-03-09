@@ -7,11 +7,12 @@ export kmap, centroid, partition, knearestreferences, sequence
 include("enet.jl")
 include("dnet.jl")
 include("criterions.jl")
+include("search.jl")
 
 """
-Transforms `objects` to a new representation space induced by `(refs, dist, kernel)`
+Transforms `objects` to a new representation space induced by ``(refs, dist, kernel)``
 - `refs` a list of references
-- `kernel` a kernel function (and an embedded distance) with signature (T, T) -> Float64
+- `kernel` a kernel function (and an embedded distance) with signature ``(T, T) \\rightarrow Float64``
 """
 function kmap(objects::AbstractVector{T}, kernel, refs::AbstractVector{T}) where {T}
     # X = Vector{T}(length(objects))
@@ -35,13 +36,13 @@ The output is controlled using a callback function. The call is performed in `ob
 
 - `callback` is a function that is called for each `(objID, refItem)`
 - `objects` is the input dataset
-- `dist` a distance function \$(T, T) \\rightarrow \Re\$
+- `dist` a distance function ``(T, T) \\rightarrow \Re``
 - `refs` the list of references
 - `k` specifies the number of nearest neighbors to use
 - `indexclass` specifies the kind of index to be used, a function receiving `(refs, dist)` as arguments,
     and returning the new metric index
 
-Please note that each object can be related to more than one group \$k > 1\$ (default \$k=1\$)
+Please note that each object can be related to more than one group ``k > 1`` (default ``k=1``)
 """
 function partition(callback::Function, objects::AbstractVector{T}, dist, refs::AbstractVector{T}; k::Int=1, indexclass=Sequential) where T
     index = indexclass(refs, dist)
@@ -57,8 +58,8 @@ end
 
 """
 Creates an inverted index from references to objects.
-So, an object \$u\$ is in \$r\$'s posting list iff \$r\$
-is among the \$k\$ nearest references of \$u\$.
+So, an object ``u`` is in ``r``'s posting list iff ``r``
+is among the ``k`` nearest references of ``u``.
 
 """
 function invindex(objects::AbstractVector{T}, dist, refs::AbstractVector{T}; k::Int=1, indexclass=Sequential) where T
@@ -67,12 +68,18 @@ function invindex(objects::AbstractVector{T}, dist, refs::AbstractVector{T}; k::
     π
 end
 
+"""
+Returns the nearest reference (identifier) of each item in the dataset
+"""
 function sequence(objects::AbstractVector{T}, dist, refs::AbstractVector{T}; indexclass=Sequential) where T
     s = Vector{Int}(length(objects))
     partition((i, p) -> begin s[i] = p.objID end, objects, dist, refs, indexclass=indexclass)
     s
 end
 
+"""
+Returns an array of k-nearest neighbors for `objects`
+"""
 function knearestreferences(objects::AbstractVector{T}, dist, refs::AbstractVector{T}; indexclass=Sequential) where T
     s = Vector{Vector{Int}}(length(objects))
     partition((i, p) -> s[i] = [p.objID for p in res], objects, dist, refs, indexclass=indexclass)

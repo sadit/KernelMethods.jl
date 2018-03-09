@@ -1,6 +1,6 @@
 module Kernels
 
-export linear, maxk, cauchy, gaussian, sigmoid, gaussian_kernel, sigmoid_kernel, cauchy_kernel
+export linear, maxk, cauchy, gaussian, sigmoid, gaussian_kernel, sigmoid_kernel, cauchy_kernel, linear_kernel
 using SimilaritySearch
 
 linear(xo, xm; sigma=1, distance=L2SquaredDistance()) = distance(xo,xm)
@@ -54,6 +54,8 @@ function cauchy_kernel(dist, sigma=1.0)
         (x == 0 || sqsigma == 0) && return 1.0
         1 / (1 + x^2 / sqsigma)
     end
+
+    fun
 end
 
 function tanh_kernel(dist, sigma=1.0)
@@ -61,6 +63,16 @@ function tanh_kernel(dist, sigma=1.0)
         x = dist(obj, ref)
         (exp(x-sigma) - exp(-x+sigma)) / (exp(x-sigma) + exp(-x+sigma))
     end
+
+    fun
+end
+
+function linear_kernel(dist, sigma=1.0)
+    function fun(obj, ref)::Float64
+        dist(obj, ref)
+    end
+
+    fun
 end
 
 end
