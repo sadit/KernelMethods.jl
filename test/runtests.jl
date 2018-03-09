@@ -93,3 +93,5 @@ end
 #     @test kc[1][2]>0.9
 # end
 
+include("kmap.jl")
+include("search.jl")
