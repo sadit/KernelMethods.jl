@@ -7,7 +7,7 @@ export kmap, centroid, partition, knearestreferences, sequence
 include("enet.jl")
 include("dnet.jl")
 include("criterions.jl")
-include("search.jl")
+include("kclass.jl")
 
 """
 Transforms `objects` to a new representation space induced by ``(refs, dist, kernel)``

@@ -86,12 +86,5 @@ end
     @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)
 end
 
-# @testset "KlusterClassifier" begin
-#     X, y = loadiris()
-#     kc = KlusterClassifier(X,y)
-#     @show kc
-#     @test kc[1][2]>0.9
-# end
-
 include("kmap.jl")
-include("search.jl")
+include("kclass.jl")
