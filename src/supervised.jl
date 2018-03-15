@@ -14,11 +14,12 @@
 
 module Supervised
     using SimilaritySearch
-    import KernelMethods.CrossValidation: montecarlo, kfolds
-    export predict, optimize!, predict_proba
 
+    # classifiers
     include("labelencoder.jl")
     include("knn.jl")
     include("naivebayes.jl")
 
+    # regression
+    include("knnreg.jl")
 end

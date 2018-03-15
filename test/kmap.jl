@@ -14,18 +14,7 @@
 
 using Base.Test
 
-function loadiris()
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
-    filename = basename(url)
-    if !isfile(filename)
-        download(url, filename)
-    end
-    data = readcsv(filename)
-    X = data[:, 1:4]
-    X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
-    y = String.(data[:, 5])
-    X, y
-end
+include("loaddata.jl")
 
 @testset "encode by farthest points" begin
     using KernelMethods.KMap: fftraversal, sqrt_criterion, change_criterion, log_criterion, kmap

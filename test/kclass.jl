@@ -13,19 +13,7 @@
 # limitations under the License.
 
 using Base.Test
-
-function loadiris()
-    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
-    filename = basename(url)
-    if !isfile(filename)
-        download(url, filename)
-    end
-    data = readcsv(filename)
-    X = data[:, 1:4]
-    X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
-    y = String.(data[:, 5])
-    X, y
-end
+include("loaddata.jl")
 
 @testset "encode by farthest points" begin
     using KernelMethods.KMap: KernelClassifier, predict
@@ -34,5 +22,5 @@ end
     X, y = loadiris()
     kmodel = KernelClassifier(X, y, folds=5, ensemble_size=5, size=31, score=accuracy)
     yh = predict(kmodel, X)
-    @test mean(y .== yh) > 0.97
+    @test mean(y .== yh) > 0.95
 end
