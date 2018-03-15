@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export NearNeighborClassifier
+export NearNeighborClassifier, optimize!, predict, predict_proba
+import KernelMethods.CrossValidation: montecarlo, kfolds
 
 using SimilaritySearch:
     Sequential, KnnResult
@@ -26,7 +27,7 @@ mutable struct NearNeighborClassifier{IndexType,LabelType}
 end
 
 
-function NearNeighborClassifier(X::Vector{ItemType}, y::Vector{LabelType}, dist, k::Int=1, weight=:uniform, indexclass=Sequential) where {ItemType, LabelType}
+function NearNeighborClassifier(X::AbstractVector{ItemType}, y::AbstractVector{LabelType}, dist, k::Int=1, weight=:uniform, indexclass=Sequential) where {ItemType, LabelType}
     le = LabelEncoder(y)
     y_ = transform.(le, y)
     index = indexclass(X, dist)
@@ -37,7 +38,7 @@ function predict(nnc::NearNeighborClassifier{IndexType,LabelType}, vector) where
     [predict_one(nnc, item) for item in vector]
 end
 
-function predict_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, vector; smoothing=0.0) where {IndexType,LabelType}
+function predict_proba(nnc::NearNeighborClassifier{IndexType,LabelType}, vector::AbstractVector; smoothing=0.0) where {IndexType,LabelType}
     [predict_one_proba(nnc, item, smoothing=smoothing) for item in vector]
 end
 

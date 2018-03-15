@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export NaiveBayesClassifier, NaiveBayesKernel, kernel_prob
+export NaiveBayesClassifier, NaiveBayesKernel, kernel_prob, predict, predict_proba
 
 abstract type NaiveBayesKernel end
 

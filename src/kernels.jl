@@ -1,30 +1,9 @@
 module Kernels
 
-export linear, maxk, cauchy, gaussian, sigmoid, gaussian_kernel, sigmoid_kernel, cauchy_kernel, linear_kernel
-using SimilaritySearch
-
-linear(xo, xm; sigma=1, distance=L2SquaredDistance()) = distance(xo,xm)
-
-maxk(xo, xm; sigma=1, distance=L2SquaredDistance()) = distance(xo,xm) > sigma ? 1.0 : 0.0
-
-function gaussian(xo, xm; sigma=1, distance=L2SquaredDistance())
-    d=distance(xo, xm)
-    (d==0 || sigma==0) && return 1.0
-    exp(-d/(2*sigma))
-end
-
-function sigmoid(xo, xm; sigma=1, distance=L2SquaredDistance())
-    2*sqrt(sigma)/(1+exp(-distance(xo,xm)))
-end
-
-function cauchy(xo, xm; sigma=1, distance=L2SquaredDistance())
-    d=distance(xo,xm)
-    (d==0 || sigma==0) && return 1.0
-    1/(1+d/(sigma*sigma))
-end
+export gaussian_kernel, sigmoid_kernel, cauchy_kernel, linear_kernel
 
 """
-Creates a Gaussian kernel with the given `sigma`
+Creates a Gaussian kernel with the given distance function and `sigma` value
 """
 function gaussian_kernel(dist, sigma=1.0)
     sigma2 = sigma * 2
@@ -37,6 +16,9 @@ function gaussian_kernel(dist, sigma=1.0)
     fun
 end
 
+"""
+Creates a sigmoid kernel with the given `sigma` value and distance function
+"""
 function sigmoid_kernel(dist, sigma=1.0)
     sqrtsigma = sqrt(sigma)
     function fun(obj, ref)::Float64
@@ -47,6 +29,9 @@ function sigmoid_kernel(dist, sigma=1.0)
     fun
 end
 
+"""
+Creates a Cauchy's kernel with the given `sigma` value and distance function
+"""
 function cauchy_kernel(dist, sigma=1.0)
     sqsigma = sigma^2
     function fun(obj, ref)::Float64
@@ -58,6 +43,9 @@ function cauchy_kernel(dist, sigma=1.0)
     fun
 end
 
+"""
+Creates a tanh kernel with the given `sigma` value and distance function
+"""
 function tanh_kernel(dist, sigma=1.0)
     function fun(obj, ref)::Float64
         x = dist(obj, ref)
@@ -67,9 +55,12 @@ function tanh_kernel(dist, sigma=1.0)
     fun
 end
 
+"""
+Creates a linear kernel with the given distance function and `sigma` slope 
+"""
 function linear_kernel(dist, sigma=1.0)
     function fun(obj, ref)::Float64
-        dist(obj, ref)
+        dist(obj, ref) * sigma
     end
 
     fun

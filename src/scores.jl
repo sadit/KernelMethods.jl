@@ -138,4 +138,53 @@ function accuracy(gold, predicted)
     c / length(gold)
 end
 
+######### Regression ########
+
+export pearson, spearman, negsqerror
+"""
+Pearson correlation score
+"""
+function pearson(X::AbstractVector{F}, Y::AbstractVector{F}) where {F <: AbstractFloat}
+    X̄ = mean(X)
+    Ȳ = mean(Y)
+    n = length(X)
+    sumXY = 0.0
+    sumX2 = 0.0
+    sumY2 = 0.0
+    for i in 1:n
+        x, y = X[i], Y[i]
+        sumXY += x * y
+        sumX2 += x * x
+        sumY2 += y * y
+    end
+    num = sumXY - n * X̄ * Ȳ
+    den = sqrt(sumX2 - n * X̄^2) * sqrt(sumY2 - n * Ȳ^2)
+    num / den
+end
+
+"""
+Spearman rank correleation score
+"""
+function spearman(X::AbstractVector{F}, Y::AbstractVector{F}) where {F <: AbstractFloat}
+    n = length(X)
+    x = invperm(sortperm(X))
+    y = invperm(sortperm(Y))
+    d = x - y
+    1 - 6 * sum(d.^2) / (n * (n^2 - 1))
+end
+
+"""
+Negative squared error (to be used for maximizing algorithms)
+"""
+function negsqerror(X::AbstractVector{F}, Y::AbstractVector{F}) where {F <: AbstractFloat}
+    n = length(X)
+    d = 0.0
+
+    for i in 1:n
+        d += (X[i] - Y[i])^2
+    end
+
+    -d
+end
+
 end
