@@ -140,7 +140,7 @@ end
 
 ######### Regression ########
 
-export pearson, spearman, negsqerror
+export pearson, spearman, isqerror
 """
 Pearson correlation score
 """
@@ -176,11 +176,11 @@ end
 """
 Negative squared error (to be used for maximizing algorithms)
 """
-function negsqerror(X::AbstractVector{F}, Y::AbstractVector{F}) where {F <: AbstractFloat}
+function isqerror(X::AbstractVector{F}, Y::AbstractVector{F}) where {F <: AbstractFloat}
     n = length(X)
     d = 0.0
 
-    for i in 1:n
+    @inbounds for i in 1:n
         d += (X[i] - Y[i])^2
     end
 
