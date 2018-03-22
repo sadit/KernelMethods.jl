@@ -9,10 +9,11 @@ Selects a number of farthest points in `X`, using a farthest first traversal
 - The number of points is determined by the stop criterion function with signature (Float64[], T[]) -> Bool
     - The first argument corresponds to the list of known distances (far objects)
     - The second argument corresponds to the database
-
-Check `criterions.jl` for basic implementations of stop criterions
+- Check `criterions.jl` for basic implementations of stop criterions
+- The callbackdist function is called on each distance evaluation between pivots and items in the dataset
+    `callbackdist(index-pivot, index-item, distance)`
 """
-function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop) where {T}
+function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop, callbackdist=nothing) where {T}
     N = length(X)
     dmaxlist = Float64[]
     dset = [typemax(Float64) for i in 1:N]
@@ -34,6 +35,9 @@ function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop) where
         imax = 0
         for i in 1:N
             d = dist(X[i], pivot)
+            if callbackdist != nothing
+                callbackdist(imax, i, d)
+            end
             if d < dset[i]
                 dset[i] = d
             end
