@@ -30,7 +30,7 @@ function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop, callb
         pivot = X[imax]
         push!(dmaxlist, dmax)
         callback(imax, dmax)
-        info("computing fartest point $k, dmax: $dmax, imax: $imax")
+        info("computing fartest point $k, dmax: $dmax, imax: $imax, stop: $stop")
         dmax = 0.0
         imax = 0
         for i in 1:N
