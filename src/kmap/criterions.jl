@@ -1,4 +1,12 @@
-export size_criterion, sqrt_criterion, change_criterion, log_criterion
+export size_criterion, sqrt_criterion, change_criterion, log_criterion, epsilon_criterion
+
+
+"""
+Stops when the distance between far items achieves the given `e`
+"""
+function epsilon_criterion(e)
+   (dmaxlist, database) -> dmaxlist[end] < e
+end
 
 """
 Stops when the number of far items are equal or larger than the given `maxsize`
