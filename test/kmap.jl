@@ -87,7 +87,7 @@ end
 
     function callback(c, dmaxlist)
         push!(refs, X[c])
-        dmax += dmaxlist[end][end]
+        dmax += last(dmaxlist).dist
     end
 
     dnet(callback, X, dist, 14)

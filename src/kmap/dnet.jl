@@ -7,10 +7,10 @@ A `k`-net is a set of points `M` such that each object in `X` can be:
 - It is in `M`
 - It is in the knn set of an object in `M` (defined with the distance function `dist`)
 
-The size of `M` is determined by \$\\leftceil|X|/k\\rightceil\$
+The size of `M` is determined by ``\leftceil|X|/k\rightceil``
 
-The dnet function uses the `callback` function as an output mechanism. This function is called on each center as `callback(centerId, [(id1, dist1), ..., (idk, distk)])` where
-id`i` and dist`i` is the object identifier and the distance between the center and the i-th nearest neighbor in `X`
+The dnet function uses the `callback` function as an output mechanism. This function is called on each center as `callback(centerId, res)` where
+res is a `KnnResult` object (from SimilaritySearch.jl).
 
 """
 function dnet(callback::Function, X::Vector{T}, dist, k) where {T}
@@ -25,7 +25,7 @@ function dnet(callback::Function, X::Vector{T}, dist, k) where {T}
         clear!(res)
         c = pop!(I.db)
         search(I, c, res)
-        callback(c, [(I.db[p.objID], p.dist) for p in res])
+        callback(c, res)
         info("computing dnet point $i, dmax: $(covrad(res))")
 
         j = 0

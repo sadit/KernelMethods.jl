@@ -34,8 +34,15 @@ function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop, callb
         dmax = 0.0
         ipivot = imax
         imax = 0
+
+        D = zeros(Float64, N)
+        Threads.@threads for i in 1:N
+            D[i] = dist(X[i], pivot)
+        end
+
         for i in 1:N
-            d = dist(X[i], pivot)
+            # d = dist(X[i], pivot)
+            d = D[i]
             if callbackdist != nothing
                 callbackdist(ipivot, i, d)
             end

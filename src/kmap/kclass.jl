@@ -113,7 +113,7 @@ function KernelClassifier(X, y;
             k = conf.net[2]
             function pushcenter2(c, dmaxlist)
                 push!(refs, X[c])
-                dmax += dmaxlist[end][end]    
+                dmax += last(dmaxlist).dist
             end
             dnet(pushcenter2, X, dist, k)
             dmax /= length(refs)

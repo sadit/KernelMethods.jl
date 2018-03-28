@@ -95,13 +95,13 @@ function centroid(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: Abs
     u = copy(objects[1])
     @inbounds for i in 2:length(objects)
         w = objects[i]
-        for j in 1:length(u)
+        @simd for j in 1:length(u)
             u[j] += w[j]
         end
     end
 
     f = 1.0 / length(objects)
-    @inbounds for j in 1:length(u)
+    @inbounds @simd for j in 1:length(u)
         u[j] *= f
     end
 
