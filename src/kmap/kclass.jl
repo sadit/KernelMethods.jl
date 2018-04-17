@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-export KernelClassifier, predict, predict_one
+export KernelClassifier, KConfigurationSpace, predict, predict_one
 
 using KernelMethods
 import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
@@ -34,10 +34,10 @@ end
 function KConfigurationSpace(;
     distances=[L2Distance],
     #kdistances=[L2Distance, CosineDistance],
-    kdistances=[CosineDistance],
+    kdistances=[L2Distance, CosineDistance],
     sampling=vcat(
         [(fftraversal, x) for x in (sqrt_criterion, log_criterion, change_criterion)],
-        [(dnet, x) for x in (3, 10, 30, 100)]
+        [(dnet, x) for x in (30, 100, 300)]
     ),
     kernels=[linear_kernel, gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel],
     reftypes=[:centroids, :centers],
@@ -87,37 +87,22 @@ function KernelClassifier(X, y;
                 ensemble_size=3,
                 space=KConfigurationSpace()
             )
-    
+
     bestlist = []
     tabu = Set()
-
+    dtype = typeof(X[1])
+    
     for conf in randconf(space, size)
         if conf in tabu
             continue
         end
 
+        info("probing configuration $(conf), data-type $(typeof(X))")
         push!(tabu, conf)
         dist = conf.dist()
         kdist = conf.kdist()
-        refs = Vector{typeof(X[1])}()
+        refs = Vector{dtype}()
         dmax = 0.0
-
-        if conf.net[1] == fftraversal
-            criterion = conf.net[2]
-            function pushcenter1(c, _dmax)
-                push!(refs, X[c])
-                dmax = _dmax
-            end
-            fftraversal(pushcenter1, X, dist, criterion())
-        elseif conf.net[1] == dnet
-            k = conf.net[2]
-            function pushcenter2(c, dmaxlist)
-                push!(refs, X[c])
-                dmax += last(dmaxlist).dist
-            end
-            dnet(pushcenter2, X, dist, k)
-            dmax /= length(refs)
-        end
 
         if conf.kernel in (cauchy_kernel, gaussian_kernel, sigmoid_kernel, tanh_kernel)
             kernel = conf.kernel(dist, dmax/2)
@@ -126,19 +111,47 @@ function KernelClassifier(X, y;
         else
             kernel = conf.kernel
         end
+        
+        if conf.net[1] == fftraversal
+            criterion = conf.net[2]
+            function pushcenter1(c, _dmax)
+                push!(refs, X[c])
+                dmax = _dmax
+            end
+            fftraversal(pushcenter1, X, dist, criterion())
 
-        if conf.reftype == :centroids
-            a = [centroid(X[plist]) for plist in invindex(X, dist, refs)]
-            M = kmap(X, kernel, a)
-        else
+            info("computing kmap, conf: $conf")
+            if conf.reftype == :centroids
+                a = [centroid(X[plist]) for plist in invindex(X, dist, refs)]
+                M = kmap(X, kernel, a)
+            else
+                M = kmap(X, kernel, refs)
+            end
+        elseif conf.net[1] == dnet
+            k = conf.net[2]
+            function pushcenter2(c, dmaxlist)
+                if conf.reftype == :centroids
+                    a = vcat([X[c]], X[[p.objID for p in dmaxlist]]) |> centroid
+                    push!(refs, a)
+                else
+                    push!(refs, X[c])
+                end
+                
+                dmax += last(dmaxlist).dist
+            end
+
+            dnet(pushcenter2, X, dist, k)
+            info("computing kmap, conf: $conf")
             M = kmap(X, kernel, refs)
+            dmax /= length(refs)
         end
 
+        info("creating and optimizing classifier, conf: $conf")
         if conf.kdist == CosineDistance
             classifier = NearNeighborClassifier(DenseCosine.(M), y, kdist)
             best = optimize!(classifier, score, folds=folds)[1]
         else
-            if classifier == NearNeighborClassifier
+            if conf.classifier == NearNeighborClassifier
                 classifier = NearNeighborClassifier(M, y, kdist)
                 best = optimize!(classifier, score, folds=folds)[1]
             else
@@ -149,12 +162,15 @@ function KernelClassifier(X, y;
 
         model = KernelClassifierType(kernel, refs, classifier, conf)
         push!(bestlist, (best[1], model))
+        info("score: $(best[1]), conf: $conf")
         sort!(bestlist, by=x->-x[1])
+
         if length(bestlist) > ensemble_size
             bestlist = bestlist[1:ensemble_size]
         end
     end
 
+    info("final scores: ", [b[1] for b in bestlist])
     # @show [b[1] for b in bestlist]
     [b[2] for b in bestlist]
 end

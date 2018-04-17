@@ -14,7 +14,7 @@
 
 module Scores
 
-export accuracy, precision_recall, precision, recall, f1
+export accuracy, precision_recall, precision, recall, f1, f1_per_class
 
 """
 It computes the recall between the gold dataset and the list of predictions `predict`
@@ -77,6 +77,24 @@ function f1(gold, predict; weight=:macro)::Float64
     else
         throw(Exception("Unknown weighting method $weight"))
     end
+end
+
+"""
+It computes the F1 score for class (also reports the macro and micro average under
+the :macro and :micro keywords)
+"""
+function f1_per_class(gold, predicted)
+    precision, recall, precision_recall_per_class = precision_recall(gold, predicted)
+    m = Dict{Any,Float64}(
+        :micro => 2 * precision * recall / (precision + recall),
+        :macro => mean(x -> 2 * x.second[1] * x.second[2] / (x.second[1] + x.second[2]), precision_recall_per_class),
+    )
+    
+    for (k, v) in precision_recall_per_class
+        m[k] = 2 * v[1] * v[2] / (v[1] + v[2])
+    end
+
+    m
 end
 
 """

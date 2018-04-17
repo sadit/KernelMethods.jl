@@ -120,6 +120,7 @@ end
 function optimize!(nnc::NearNeighborClassifier, scorefun::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
     mem = Dict{Tuple,Float64}()
     function f(train_X, train_y, test_X, test_y)
+        info("=== NearNeighborClassifier optimizing $(typeof(train_X))")
         tmp = NearNeighborClassifier(train_X, train_y, nnc.X.dist)
         kmax = sqrt(length(nnc.X.db)) |> round |> Int
         table = _train_create_table(train_X, train_y, test_X, nnc.X.dist, kmax)

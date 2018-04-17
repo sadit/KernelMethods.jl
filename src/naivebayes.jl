@@ -57,6 +57,7 @@ function predict_one(nbc::NaiveBayesClassifier{ItemType,LabelType}, x) where {It
 end
 
 function optimize!(nbc::NaiveBayesClassifier{ItemType,LabelType}, X::AbstractVector{ItemType}, y::AbstractVector{LabelType}, scorefun::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true) where {ItemType,LabelType}
+    info("optimizing nbc $(typeof(nbc))")
     # y::Vector{Int} = transform.(nbc.le, y)
     mem = Dict{Any,Float64}()
     function f(train_X, train_y, test_X, test_y)

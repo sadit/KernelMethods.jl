@@ -16,7 +16,7 @@ Transforms `objects` to a new representation space induced by ``(refs, dist, ker
 """
 function kmap(objects::AbstractVector{T}, kernel, refs::AbstractVector{T}) where {T}
     # X = Vector{T}(length(objects))
-    m = Vector{T}(length(objects))
+    m = Vector{Vector{Float64}}(length(objects))
     @inbounds for i in 1:length(objects)
         u = Vector{Float64}(length(refs))
         obj = objects[i]
