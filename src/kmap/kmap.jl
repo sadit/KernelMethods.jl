@@ -2,7 +2,9 @@ module KMap
 using SimilaritySearch:
     Sequential, KnnResult, search, clear!, Item
 
-export kmap, centroid, partition, knearestreferences, sequence
+using TextModel
+
+export kmap, centroid!, partition, knearestreferences, sequence
 
 include("enet.jl")
 include("dnet.jl")
@@ -91,7 +93,7 @@ Computes the centroid of the list of objects
 
 - Use the dot operator (broadcast) to convert several groups of objects
 """
-function centroid(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: AbstractFloat}
+function centroid!(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: AbstractFloat}
     u = copy(objects[1])
     @inbounds for i in 2:length(objects)
         w = objects[i]
@@ -108,5 +110,43 @@ function centroid(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: Abs
     return u
 end
 
+"""
+Computes the centroid of a collection of `DenseCosine` vectors.
+It don't destroys the input array, however, the VBOW version does it
+"""
+function centroid!(vecs::AbstractVector{DenseCosine{F}}) where {F <: AbstractFloat}
+    # info("** COMPUTING the centroid of $(length(vecs)) items")
+    m = length(vecs[1].vec)
+    w = zeros(F, m)
+    
+    for vv in vecs
+        v::Vector{F} = vv.vec
+        @inbounds @simd for i in 1:m
+            w[i] += v[i]
+        end
+    end
+
+    DenseCosine(w)
+end
+
+"""
+Computes a centroid-like sparse vector (i.e., a center under the angle distance) for a collection of sparse vectors.
+The computation destroys input array to reduce memory allocations.
+"""
+function centroid!(vecs::AbstractVector{VBOW})
+	lastpos = length(vecs)
+	while lastpos > 1
+		pos = 1
+		for i in 1:2:lastpos
+			if i < lastpos
+				vecs[pos] = vecs[i] + vecs[i+1]
+			end
+			pos += 1
+		end
+		lastpos = pos - 1
+	end
+	
+    vecs[1]
+end
 
 end

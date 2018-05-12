@@ -46,7 +46,7 @@ include("loaddata.jl")
 end
 
 @testset "Clustering and centroid computation (with cosine)" begin
-    using KernelMethods.KMap: fftraversal, sqrt_criterion, invindex, centroid
+    using KernelMethods.KMap: fftraversal, sqrt_criterion, invindex, centroid!
     using SimilaritySearch: L2Distance, L1Distance
     using SimilaritySearch: CosineDistance, DenseCosine
     X, y = loadiris()
@@ -60,7 +60,7 @@ end
     end
 
     fftraversal(callback, X, dist, sqrt_criterion())
-    a = [centroid(X[plist]) for plist in invindex(X, dist, refs)]
+    a = [centroid!(X[plist]) for plist in invindex(X, dist, refs)]
     g = gaussian_kernel(dist, dmax/4)
     M = kmap(X, g, a)
     nnc = NearNeighborClassifier([DenseCosine(w) for w in M], y, CosineDistance())

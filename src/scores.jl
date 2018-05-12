@@ -85,21 +85,23 @@ Computes precision, recall, and f1 scores, for global and per-class granularity
 function scores(gold, predicted)
     precision, recall, precision_recall_per_class = precision_recall(gold, predicted)
     m = Dict(
-        :micro => 2 * precision * recall / (precision + recall),
-        :macro => mean(x -> 2 * x.second[1] * x.second[2] / (x.second[1] + x.second[2]), precision_recall_per_class),
+        :micro_f1 => 2 * precision * recall / (precision + recall),
 		:precision => precision,
 		:recall => recall,
 		:class_f1 => Dict(),
 		:class_precision => Dict(),
 		:class_recall => Dict()
     )
-    
+
     for (k, v) in precision_recall_per_class
         m[:class_f1][k] = 2 * v[1] * v[2] / (v[1] + v[2])
 		m[:class_precision][k] = v[1]
 		m[:class_recall][k] = v[2]
     end
-
+    
+    m[:macro_recall] = mean(values(m[:class_recall]))
+    m[:macro_f1] = mean(values(m[:class_f1]))
+    m[:accuracy] = accuracy(gold, predicted)
     m
 end
 

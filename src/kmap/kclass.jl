@@ -122,7 +122,7 @@ function KernelClassifier(X, y;
 
             info("computing kmap, conf: $conf")
             if conf.reftype == :centroids
-                a = [centroid(X[plist]) for plist in invindex(X, dist, refs)]
+                a = [centroid!(X[plist]) for plist in invindex(X, dist, refs) if length(plist) > 0]
                 M = kmap(X, kernel, a)
             else
                 M = kmap(X, kernel, refs)
@@ -131,7 +131,7 @@ function KernelClassifier(X, y;
             k = conf.net[2]
             function pushcenter2(c, dmaxlist)
                 if conf.reftype == :centroids
-                    a = vcat([X[c]], X[[p.objID for p in dmaxlist]]) |> centroid
+                    a = vcat([X[c]], X[[p.objID for p in dmaxlist]]) |> centroid!
                     push!(refs, a)
                 else
                     push!(refs, X[c])
