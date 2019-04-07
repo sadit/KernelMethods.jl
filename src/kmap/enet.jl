@@ -13,7 +13,7 @@ Selects a number of farthest points in `X`, using a farthest first traversal
 - The callbackdist function is called on each distance evaluation between pivots and items in the dataset
     `callbackdist(index-pivot, index-item, distance)`
 """
-function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop, callbackdist=nothing) where {T}
+function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, stop, callbackdist=nothing) where {T}
     N = length(X)
     dmaxlist = Float64[]
     dset = [typemax(Float64) for i in 1:N]
@@ -30,7 +30,7 @@ function fftraversal(callback::Function, X::AbstractVector{T}, dist, stop, callb
         pivot = X[imax]
         push!(dmaxlist, dmax)
         callback(imax, dmax)
-        info("computing fartest point $k, dmax: $dmax, imax: $imax, stop: $stop")
+        @info "computing fartest point $k, dmax: $dmax, imax: $imax, stop: $stop"
         dmax = 0.0
         ipivot = imax
         imax = 0

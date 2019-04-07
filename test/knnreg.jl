@@ -16,20 +16,20 @@ using KernelMethods
 import KernelMethods.Scores: pearson, spearman, isqerror
 import KernelMethods.CrossValidation: montecarlo, kfolds
 import KernelMethods.Supervised: NearNeighborRegression, optimize!, predict, predict_proba, transform, inverse_transform
-import SimilaritySearch: L2Distance
+import SimilaritySearch: l2_distance
 # import KernelMethods.Nets: KlusterClassifier
-using Base.Test
+using Test
 
 include("loaddata.jl")
 
 @testset "KNN Regression" begin
     X, y = loadlinearreg()
-    nnc = NearNeighborRegression(X, y, L2Distance())
-    @test optimize!(nnc, pearson, folds=3)[1][1] > 0.95
-    @test optimize!(nnc, spearman, folds=3)[1][1] > 0.95
-    @show optimize!(nnc, isqerror, folds=5)
-    #@test optimize!(nnc, accuracy, runs=5, trainratio=0.3, testratio=0.3)[1][1] > 0.9
-    #@test sum([maximum(x) for x in predict_proba(nnc, X, smoothing=0)])/ length(X) > 0.9 ## close to have all ones, just in case
-    #@test sum([maximum(x) for x in predict_proba(nnc, X, smoothing=0.01)])/ length(X) > 0.9 ## close to have all ones, just in case
+    nnr = NearNeighborRegression(l2_distance, X, y)
+    @test optimize!(nnr, pearson, folds=3)[1][1] > 0.95
+    @test optimize!(nnr, spearman, folds=3)[1][1] > 0.95
+    @show optimize!(nnr, isqerror, folds=5)
+    #@test optimize!(nnr, accuracy, runs=5, trainratio=0.3, testratio=0.3)[1][1] > 0.9
+    #@test sum([maximum(x) for x in predict_proba(nnr, X, smoothing=0)])/ length(X) > 0.9 ## close to have all ones, just in case
+    #@test sum([maximum(x) for x in predict_proba(nnr, X, smoothing=0.01)])/ length(X) > 0.9 ## close to have all ones, just in case
 end
 

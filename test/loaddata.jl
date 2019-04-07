@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-using Base.Test
+using Test
+using DelimitedFiles
 
 function loadiris()
     url = "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data"
@@ -21,7 +22,7 @@ function loadiris()
         download(url, filename)
     end
 
-    data = readcsv(filename)
+    data = readdlm(filename, ',')
     X = data[:, 1:4]
     X = [Float64.(X[i, :]) for i in 1:size(X, 1)]
     y = String.(data[:, 5])
@@ -30,7 +31,7 @@ end
 
 
 function loadlinearreg()
-    X = [i + rand(2) for i in 1:100]
-    y = linspace(0, 100, 100) + rand(100)
+    X = [rand(2) .+ i for i in 1:100]
+    y = range(1, stop=100, length=100) .+ rand(100)
     X, y
 end

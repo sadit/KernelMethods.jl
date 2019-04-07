@@ -14,21 +14,21 @@
 
 export NearNeighborRegression, optimize!, predict, predict_proba
 import KernelMethods.CrossValidation: montecarlo, kfolds
-
+using Statistics
 using SimilaritySearch:
-    Sequential, KnnResult, clear!
+    Sequential, KnnResult, empty!, fit
 
 mutable struct NearNeighborRegression{IndexType,DataType}
+    dist::Function
     X::IndexType
     y::Vector{DataType}
     k::Int
     summarize::Function
-end
 
-
-function NearNeighborRegression(X::AbstractVector{ItemType}, y::AbstractVector{DataType}, dist; summarize=mean, k::Int=1, indexclass=Sequential) where {ItemType, DataType}
-    index = indexclass(X, dist)
-    NearNeighborRegression{indexclass, DataType}(index, y, k, summarize)
+    function NearNeighborRegression(dist::Function, X::AbstractVector{ItemType}, y::AbstractVector{DataType}; summarize=mean, k::Int=1) where {ItemType, DataType}
+        index = fit(Sequential, X)
+        new{typeof(index), DataType}(dist, index, y, k, summarize)
+    end
 end
 
 function predict(nnc::NearNeighborRegression{IndexType,DataType}, vector) where {IndexType,DataType}
@@ -37,16 +37,16 @@ end
 
 function predict_one(nnc::NearNeighborRegression{IndexType,DataType}, item) where {IndexType,DataType}
     res = KnnResult(nnc.k)
-    search(nnc.X, item, res)
+    search(nnc.X, nnc.dist, item, res)
     DataType[nnc.y[p.objID] for p in res] |> nnc.summarize
 end
 
-function _train_create_table_reg(train_X, train_y, test_X, dist, k::Int)
-    index = Sequential(train_X, dist)
+function _train_create_table_reg(dist::Function, train_X, train_y, test_X, k::Int)
+    index = fit(Sequential, train_X)
     res = KnnResult(k)
     function f(x)
-        clear!(res)  # this is thread unsafe
-        search(index, x, res)
+        empty!(res)  # this is thread unsafe
+        search(index, dist, x, res)
         [train_y[p.objID] for p in res]
     end
 
@@ -54,7 +54,7 @@ function _train_create_table_reg(train_X, train_y, test_X, dist, k::Int)
 end
 
 function _train_predict(nnc::NearNeighborRegression{IndexType,DataType}, table, test_X, k) where {IndexType,DataType}
-    A = Vector{DataType}(length(test_X))
+    A = Vector{DataType}(undef, length(test_X))
     for i in 1:length(test_X)
         row = table[i]
         A[i] = nnc.summarize(row[1:k])
@@ -75,18 +75,19 @@ function hmean(X)
     length(X) / d
 end
 
-function optimize!(nnc::NearNeighborRegression, scorefun::Function; summarize_list=[mean, median, gmean, hmean], runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
+function optimize!(nnr::NearNeighborRegression, scorefun::Function; summarize_list=[mean, median, gmean, hmean], runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true)
     mem = Dict{Tuple,Float64}()
+
     function f(train_X, train_y, test_X, test_y)
-        tmp = NearNeighborRegression(train_X, train_y, nnc.X.dist)
-        kmax = sqrt(length(nnc.X.db)) |> round |> Int
-        table = _train_create_table_reg(train_X, train_y, test_X, nnc.X.dist, kmax)
+        _nnr = NearNeighborRegression(nnr.dist, train_X, train_y)
+        kmax = sqrt(length(train_y)) |> round |> Int
+        table = _train_create_table_reg(nnr.dist, train_X, train_y, test_X, kmax)
         k = 2
         while k <= kmax
-            tmp.k = k - 1
+            _nnr.k = k - 1
             for summarize in summarize_list
-                tmp.summarize = summarize
-                pred_y = _train_predict(tmp, table, test_X, tmp.k)
+                _nnr.summarize = summarize
+                pred_y = _train_predict(_nnr, table, test_X, _nnr.k)
                 score = scorefun(test_y, pred_y)
                 key = (k - 1, summarize)
                 mem[key] = get(mem, key, 0.0) + score
@@ -97,17 +98,17 @@ function optimize!(nnc::NearNeighborRegression, scorefun::Function; summarize_li
     end
 
     if folds > 1
-        kfolds(f, nnc.X.db, nnc.y, folds=folds, shuffle=shufflefolds)
+        kfolds(f, nnr.X.db, nnr.y, folds=folds, shuffle=shufflefolds)
         bestlist = [(score/folds, conf) for (conf, score) in mem]
     else
-        montecarlo(f, nnc.X.db, nnc.y, runs=runs, trainratio=trainratio, testratio=testratio)
+        montecarlo(f, nnr.X.db, nnr.y, runs=runs, trainratio=trainratio, testratio=testratio)
         bestlist = [(score/runs, conf) for (conf, score) in mem]
     end
 
     sort!(bestlist, by=x -> (-x[1], x[2][1]))
     best = bestlist[1]
-    nnc.k = best[2][1]
-    nnc.summarize = best[2][2]
+    nnr.k = best[2][1]
+    nnr.summarize = best[2][2]
 
     bestlist
 end

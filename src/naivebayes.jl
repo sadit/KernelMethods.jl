@@ -27,6 +27,7 @@ include("nbmultinomial.jl")
 
 function NaiveBayesClassifier(X::AbstractVector{ItemType}, y::AbstractVector{LabelType}; kernel=GaussianKernel) where {ItemType,LabelType}
     le = LabelEncoder(y)
+    # y_ = [transform(le, l) for l in y]
     y_ = transform.(le, y)
     probs = Float64[freq/length(y) for freq in le.freqs]
     kernel_ = kernel(X, y_, length(le.labels))
@@ -34,7 +35,7 @@ function NaiveBayesClassifier(X::AbstractVector{ItemType}, y::AbstractVector{Lab
 end
 
 function predict(nbc::NaiveBayesClassifier{ItemType,LabelType}, vector)::Vector{LabelType} where {ItemType,LabelType}
-    y = Vector{LabelType}(length(vector))
+    y = Vector{LabelType}(undef, length(vector))
     for i in 1:length(vector)
         y[i] = predict_one(nbc, vector[i])
     end
@@ -57,7 +58,7 @@ function predict_one(nbc::NaiveBayesClassifier{ItemType,LabelType}, x) where {It
 end
 
 function optimize!(nbc::NaiveBayesClassifier{ItemType,LabelType}, X::AbstractVector{ItemType}, y::AbstractVector{LabelType}, scorefun::Function; runs=3, trainratio=0.5, testratio=0.5, folds=0, shufflefolds=true) where {ItemType,LabelType}
-    info("optimizing nbc $(typeof(nbc))")
+    @info "optimizing nbc $(typeof(nbc))"
     # y::Vector{Int} = transform.(nbc.le, y)
     mem = Dict{Any,Float64}()
     function f(train_X, train_y, test_X, test_y)

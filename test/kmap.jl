@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-using Base.Test
+using Test
 
 include("loaddata.jl")
 
@@ -20,11 +20,11 @@ include("loaddata.jl")
     using KernelMethods.KMap: fftraversal, sqrt_criterion, change_criterion, log_criterion, kmap
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
-    using SimilaritySearch: L2Distance
+    using SimilaritySearch: l2_distance, normalize!
     using KernelMethods.Kernels: gaussian_kernel, cauchy_kernel, sigmoid_kernel
 
     X, y = loadiris()
-    dist = L2Distance()
+    dist = l2_distance
     # criterion = change_criterion(0.01)
     refs = Vector{typeof(X[1])}()
     dmax = 0.0
@@ -33,10 +33,10 @@ include("loaddata.jl")
         dmax = _dmax
     end
 
-    fftraversal(callback, X, dist, sqrt_criterion())
+    fftraversal(callback, dist, X, sqrt_criterion())
     g = cauchy_kernel(dist, dmax/2)
     M = kmap(X, g, refs)
-    nnc = NearNeighborClassifier(M, y, L2Distance())
+    nnc = NearNeighborClassifier(l2_distance, M, y)
 
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
@@ -47,10 +47,9 @@ end
 
 @testset "Clustering and centroid computation (with cosine)" begin
     using KernelMethods.KMap: fftraversal, sqrt_criterion, invindex, centroid!
-    using SimilaritySearch: L2Distance, L1Distance
-    using SimilaritySearch: CosineDistance, DenseCosine
+    using SimilaritySearch: l2_distance, l1_distance, angle_distance, cosine_distance
     X, y = loadiris()
-    dist = L2Distance()
+    dist = l2_distance
     refs = Vector{typeof(X[1])}()
     dmax = 0.0
 
@@ -59,11 +58,11 @@ end
         dmax = _dmax
     end
 
-    fftraversal(callback, X, dist, sqrt_criterion())
-    a = [centroid!(X[plist]) for plist in invindex(X, dist, refs)]
+    fftraversal(callback, dist, X, sqrt_criterion())
+    a = [centroid!(X[plist]) for plist in invindex(dist, X, refs)]
     g = gaussian_kernel(dist, dmax/4)
     M = kmap(X, g, a)
-    nnc = NearNeighborClassifier([DenseCosine(w) for w in M], y, CosineDistance())
+    nnc = NearNeighborClassifier(cosine_distance, [normalize!(w) for w in M], y)
 
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
@@ -76,11 +75,11 @@ end
     using KernelMethods.KMap: dnet, sqrt_criterion, change_criterion, log_criterion, kmap
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
-    using SimilaritySearch: L2Distance, LpDistance
+    using SimilaritySearch: l2_distance
     using KernelMethods.Kernels: gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel
 
     X, y = loadiris()
-    dist = L2Distance()
+    dist = l2_distance
     # criterion = change_criterion(0.01)
     refs = Vector{typeof(X[1])}()
     dmax = 0.0
@@ -90,11 +89,11 @@ end
         dmax += last(dmaxlist).dist
     end
 
-    dnet(callback, X, dist, 14)
+    dnet(callback, dist, X, 14)
     _dmax = dmax / length(refs)
     g = tanh_kernel(dist, _dmax)
     M = kmap(X, g, refs)
-    nnc = NearNeighborClassifier(M, y, L2Distance())
+    nnc = NearNeighborClassifier(l2_distance, M, y)
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93

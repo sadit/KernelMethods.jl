@@ -14,22 +14,25 @@
 
 export LabelEncoder, transform, inverse_transform
 
+import Base: broadcastable
+
 struct LabelEncoder{LabelType}
     imap::Dict{LabelType,Int}
     labels::Vector{LabelType}
     freqs::Vector{Int}
-end
 
-function LabelEncoder(y::AbstractVector{LabelType}) where LabelType
-    L = Dict{LabelType,Int}()
-    for c in y
-        L[c] = get(L, c, 0) + 1
+    function LabelEncoder(y::AbstractVector{LabelType}) where LabelType
+        L = Dict{LabelType,Int}()
+        for c in y
+            L[c] = get(L, c, 0) + 1
+        end
+
+        labels = collect(keys(L))
+        sort!(labels)
+        freqs = [L[c] for c in labels]
+        imap = Dict(c => i for (i, c) in enumerate(labels))
+        new{LabelType}(imap, labels, freqs)
     end
-    labels = collect(keys(L))
-    sort!(labels)
-    freqs = [L[c] for c in labels]
-    imap = Dict(c => i for (i, c) in enumerate(labels))
-    LabelEncoder(imap, labels, freqs)
 end
 
 function transform(le::LabelEncoder{LabelType}, y::LabelType)::Int where LabelType
@@ -38,4 +41,8 @@ end
 
 function inverse_transform(le::LabelEncoder{LabelType}, y::Int)::LabelType where LabelType
     le.labels[y]
+end
+
+function broadcastable(le::LabelEncoder)
+    [le]
 end

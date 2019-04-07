@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-using Base.Test
+using Test
+using StatsBase
 include("loaddata.jl")
 
 @testset "encode by farthest points" begin
     using KernelMethods.KMap: KernelClassifier, predict
     using KernelMethods.Scores: accuracy, recall
-    using SimilaritySearch: L2Distance
     X, y = loadiris()
-    kmodel = KernelClassifier(X, y, folds=5, ensemble_size=5, size=31, score=accuracy)
+    kmodel = KernelClassifier(X, y, folds=3, ensemble_size=3, size=31, score=accuracy)
     yh = predict(kmodel, X)
-    @test mean(y .== yh) > 0.95
+    acc = mean(y .== yh)
+    @info "===== KernelClassifier accuracy: $acc"
+    @test acc > 0.9
 end

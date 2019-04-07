@@ -14,6 +14,7 @@
 
 
 module CrossValidation
+using Random
 
 export montecarlo, kfolds
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 module Scores
-
+using StatsBase
 export accuracy, precision_recall, precision, recall, f1, scores
 
 """

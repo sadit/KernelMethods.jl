@@ -16,9 +16,9 @@ using KernelMethods
 import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
 import KernelMethods.CrossValidation: montecarlo, kfolds
 import KernelMethods.Supervised: NearNeighborClassifier, NaiveBayesClassifier, optimize!, predict, predict_proba, transform, inverse_transform
-import SimilaritySearch: L2Distance
+import SimilaritySearch: l2_distance
 # import KernelMethods.Nets: KlusterClassifier
-using Base.Test
+using Test
 
 
 @testset "Scores" begin
@@ -51,7 +51,7 @@ include("loaddata.jl")
 
 @testset "KNN" begin
     X, y = loadiris()
-    nnc = NearNeighborClassifier(X, y, L2Distance())
+    nnc = NearNeighborClassifier(l2_distance, X, y)
     @test optimize!(nnc, accuracy, runs=5, trainratio=0.2, testratio=0.2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, runs=5, trainratio=0.3, testratio=0.3)[1][1] > 0.9
     @test optimize!(nnc, accuracy, runs=5, trainratio=0.7, testratio=0.3)[1][1] > 0.9
@@ -71,7 +71,7 @@ end
     @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.2, testratio=0.2)[1][1] > 0.8
     @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.3, testratio=0.3)[1][1] > 0.8
     @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.5, testratio=0.5)[1][1] > 0.8
-    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)[1][1] > 0.9
+    @test optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)[1][1] > 0.8
     @show optimize!(nbc, X, y, accuracy, runs=5, trainratio=0.7, testratio=0.3)
 end
 
