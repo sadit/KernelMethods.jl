@@ -34,8 +34,8 @@ struct KConfigurationSpace
         distances=[l2_distance, cosine_distance],
         kdistances=[l2_distance, cosine_distance],
         sampling=vcat(
-            [(method=fftraversal, stop=x) for x in (sqrt_criterion, log_criterion, change_criterion)],
-            ## [(method=dnet, kfun=x) for x in (log2, x -> min(x, log2(x)^2))]
+            # [(method=fftraversal, stop=x) for x in (sqrt_criterion, log_criterion, change_criterion)],
+            [(method=dnet, kfun=x) for x in (log2, x -> min(x, log2(x)^2))]
         ),
         #kernels=[linear_kernel, gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel],
         kernels=[linear_kernel, gaussian_kernel],
@@ -140,8 +140,9 @@ Searches for a competitive configuration in a parameter space using random searc
                     
                     dmax += last(dmaxlist).dist
                 end
-                
-                dnet(pushcenter2, dist, X, conf.net.kfun(length(X)) |> ceil |> Int)
+                k = conf.net.kfun(length(X)) |> ceil |> Int
+                dnet(pushcenter2, dist, X, k)
+                @assert k == length(refs)
                 @info "computing kmap, conf: $conf"
                 M = kmap(X, kernel, refs)
                 dmax /= length(refs)
