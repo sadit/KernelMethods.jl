@@ -23,6 +23,7 @@ import SimilaritySearch: l2_distance, angle_distance
 using KernelMethods.Kernels: gaussian_kernel, cauchy_kernel, sigmoid_kernel, tanh_kernel, linear_kernel
 
 struct KConfigurationSpace
+    normalize
     distances
     kdistances
     sampling
@@ -31,25 +32,28 @@ struct KConfigurationSpace
     classifiers
     
     function KConfigurationSpace(;
+        normalize=[true, false],
         distances=[l2_distance, cosine_distance],
         kdistances=[l2_distance, cosine_distance],
         sampling=vcat(
-            # [(method=fftraversal, stop=x) for x in (sqrt_criterion, log_criterion, change_criterion)],
+            [(method=fftraversal, stop=x) for x in (sqrt_criterion, log_criterion, change_criterion)],
             [(method=dnet, kfun=x) for x in (log2, x -> min(x, log2(x)^2))]
         ),
         #kernels=[linear_kernel, gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel],
-        kernels=[linear_kernel, gaussian_kernel],
+        kernels=[linear_kernel, gaussian_kernel, tanh_kernel],
+        #reftypes=[:centroids, :centers],
         reftypes=[:centroids, :centers],
         #classifiers=[NearNeighborClassifier, NaiveBayesClassifier]
         classifiers=[NearNeighborClassifier]
         )
-        new(distances, kdistances, sampling, kernels, reftypes, classifiers)
+        new(normalize, distances, kdistances, sampling, kernels, reftypes, classifiers)
     end
     
 end
 
 
 struct KConfiguration
+    normalize
     dist
     kdist
     kernel
@@ -59,14 +63,20 @@ struct KConfiguration
 end
 
 function randconf(space::KConfigurationSpace)
-    KConfiguration(
-    rand(space.distances),
-    rand(space.kdistances),
-    rand(space.kernels),
-    rand(space.sampling),
-    rand(space.reftypes),
-    rand(space.classifiers)
+    kdist = rand(space.kdistances)
+    normalize = (kdist in (cosine_distance, angle_distance)) || rand(space.normalize)
+
+    c = KConfiguration(
+        normalize,
+        rand(space.distances),
+        kdist,
+        rand(space.kernels),
+        rand(space.sampling),
+        rand(space.reftypes),
+        rand(space.classifiers)
     )
+    
+    c
 end
 
 function randconf(space::KConfigurationSpace, num::Integer)
@@ -100,7 +110,7 @@ Searches for a competitive configuration in a parameter space using random searc
                 continue
             end
             
-            @info "probing configuration $(conf), data-type $(typeof(X))"
+            @info "testing configuration $(conf), data-type $(typeof(X))"
             push!(tabu, conf)
             dist = conf.dist
             kdist = conf.kdist
@@ -142,28 +152,29 @@ Searches for a competitive configuration in a parameter space using random searc
                 end
                 k = conf.net.kfun(length(X)) |> ceil |> Int
                 dnet(pushcenter2, dist, X, k)
-                @assert k == length(refs)
+                if k == length(refs)
+                    @info "$k != $(length(refs))"
+                    @info refs
+                    error("incorrect number of references, $conf")
+                end
                 @info "computing kmap, conf: $conf"
                 M = kmap(X, kernel, refs)
                 dmax /= length(refs)
             end
-            
-            @info "creating and optimizing classifier, conf: $conf"
-            if kdist == cosine_distance || kdist == angle_distance
+
+            if conf.normalize
                 for m in M
                     normalize!(m)
                 end
+            end
 
+            @info "creating and optimizing classifier, conf: $conf"
+            if conf.classifier == NearNeighborClassifier
                 classifier = NearNeighborClassifier(kdist, M, y)
                 best = optimize!(classifier, score, folds=folds)[1]
             else
-                if conf.classifier == NearNeighborClassifier
-                    classifier = NearNeighborClassifier(kdist, M, y)
-                    best = optimize!(classifier, score, folds=folds)[1]
-                else
-                    classifier = NaiveBayesClassifier(M, y)
-                    best = optimize!(classifier, M, y, score, folds=folds)[1]
-                end
+                classifier = NaiveBayesClassifier(M, y)
+                best = optimize!(classifier, M, y, score, folds=folds)[1]
             end
             
             model = KernelClassifierType(kernel, refs, classifier, conf)
@@ -208,10 +219,10 @@ Searches for a competitive configuration in a parameter space using random searc
             vec[i] = kernel(x, refs[i])
         end
         
-        if kmodel.conf.kdist == angle_distance || kmodel.conf.kdist == cosine_distance
+        if kmodel.conf.normalize
             normalize!(vec)
         end
-        
+
         predict_one(kmodel.classifier, vec)
     end
     
