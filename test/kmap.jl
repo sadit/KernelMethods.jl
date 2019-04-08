@@ -59,7 +59,8 @@ end
     end
 
     fftraversal(callback, dist, X, sqrt_criterion())
-    a = [centroid!(X[plist]) for plist in invindex(dist, X, refs)]
+    R = fit(Sequential, refs)
+    a = [centroid!(X[plist]) for plist in invindex(dist, X, R)]
     g = gaussian_kernel(dist, dmax/4)
     M = kmap(X, g, a)
     nnc = NearNeighborClassifier(cosine_distance, [normalize!(w) for w in M], y)
@@ -70,11 +71,12 @@ end
 end
 
 @testset "encode with dnet" begin
-    using KernelMethods.KMap: dnet, sqrt_criterion, change_criterion, log_criterion, kmap
+    using KernelMethods.KMap: dnet, sqrt_criterion, change_criterion, log_criterion, kmap, fftclustering
     using KernelMethods.Scores: accuracy
     using KernelMethods.Supervised: NearNeighborClassifier, optimize!
-    using SimilaritySearch: l2_distance
+    using SimilaritySearch: l2_distance, normalize!, angle_distance
     using KernelMethods.Kernels: gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel
+    using Statistics
 
     X, y = loadiris()
     dist = l2_distance
@@ -97,6 +99,26 @@ end
     @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93
     @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.93
     @show optimize!(nnc, accuracy, folds=5)
+
+    C = fftclustering(angle_distance, [normalize!(x) for x in X], 21, k=3)
+    
+    matches = 0
+    for (i, res) in enumerate(C.NN)
+        label = Dict{eltype(typeof(y)),Float64}()
+        for (pos, p) in enumerate(res)
+            l = y[p.objID]
+            label[l] = get(label, l, 0) + 1 / pos
+        end
+
+        L = [(v, k) for (k, v) in label]
+        sort!(L)
+        if y[i] == L[end][end]
+            matches += 1
+        end
+    end
+
+    @info "===== accuracy by fftclustering: $(matches/length(y))"
+    @test matches/length(y) > 0.9
 end
 
 # @testset "KlusterClassifier" begin

@@ -1,14 +1,14 @@
 module KMap
 using SimilaritySearch:
-    Sequential, KnnResult, search, empty!, Item
+    Sequential, KnnResult, search, empty!, Item, Index
 
 #using TextModel
 
 export kmap, centroid!, partition, knearestreferences, sequence
 
-include("enet.jl")
-include("dnet.jl")
 include("criterions.jl")
+include("fftraversal.jl")
+include("dnet.jl")
 include("kclass.jl")
 
 """
@@ -46,12 +46,11 @@ The output is controlled using a callback function. The call is performed in `ob
 
 Please note that each object can be related to more than one group ``k > 1`` (default ``k=1``)
 """
-function partition(callback::Function, dist::Function, objects::AbstractVector{T}, refs::AbstractVector{T}; k::Int=1, indexclass=Sequential) where T
-    index = fit(Sequential, refs)
+function partition(callback::Function, dist::Function, objects::AbstractVector{T}, refs::Index; k::Int=1) where T
     res = KnnResult(k)
     for i in 1:length(objects)
         empty!(res)
-        search(index, dist, objects[i], res)
+        search(refs, dist, objects[i], res)
         for p in res
             callback(i, p)
         end
@@ -64,27 +63,27 @@ So, an object ``u`` is in ``r``'s posting list iff ``r``
 is among the ``k`` nearest references of ``u``.
 
 """
-function invindex(dist::Function, objects::AbstractVector{T}, refs::AbstractVector{T}; k::Int=1, indexclass=Sequential) where T
-    π = [Vector{Int}() for i in 1:length(refs)]
-    partition((i, p) -> push!(π[p.objID], i), dist, objects, refs, k=k, indexclass=indexclass)
+function invindex(dist::Function, objects::AbstractVector{T}, refs::Index; k::Int=1) where T
+    π = [Vector{Int}() for i in 1:length(refs.db)]
+    partition((i, p) -> push!(π[p.objID], i), dist, objects, refs, k=k)
     π
 end
 
 """
 Returns the nearest reference (identifier) of each item in the dataset
 """
-function sequence(dist::Function, objects::AbstractVector{T}, refs::AbstractVector{T}; indexclass=Sequential) where T
+function sequence(dist::Function, objects::AbstractVector{T}, refs::Index) where T
     s = Vector{Int}(length(objects))
-    partition((i, p) -> begin s[i] = p.objID end, dist, objects, refs, indexclass=indexclass)
+    partition((i, p) -> begin s[i] = p.objID end, dist, objects, refs)
     s
 end
 
 """
 Returns an array of k-nearest neighbors for `objects`
 """
-function knearestreferences(dist::Function, objects::AbstractVector{T}, refs::AbstractVector{T}; indexclass=Sequential) where T
+function knearestreferences(dist::Function, objects::AbstractVector{T}, refs::Index) where T
     s = Vector{Vector{Int}}(length(objects))
-    partition((i, p) -> s[i] = [p.objID for p in res], dist, objects, refs, indexclass=indexclass)
+    partition((i, p) -> s[i] = [p.objID for p in res], dist, objects, refs)
     s
 end
 

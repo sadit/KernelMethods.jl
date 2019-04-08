@@ -75,7 +75,7 @@ function randconf(space::KConfigurationSpace)
         rand(space.reftypes),
         rand(space.classifiers)
     )
-    
+
     c
 end
 
@@ -132,9 +132,11 @@ Searches for a competitive configuration in a parameter space using random searc
                 end
 
                 fftraversal(pushcenter1, dist, X, conf.net.stop())
+                # after fftraversal refs is populated
+                R = fit(Sequential, refs)
                 @info "computing kmap, conf: $conf"
                 if conf.reftype == :centroids
-                    a = [centroid!(X[plist]) for plist in invindex(dist, X, refs) if length(plist) > 0]
+                    a = [centroid!(X[plist]) for plist in invindex(dist, X, R) if length(plist) > 0]
                     M = kmap(X, kernel, a)
                 else
                     M = kmap(X, kernel, refs)
@@ -150,6 +152,7 @@ Searches for a competitive configuration in a parameter space using random searc
                     
                     dmax += last(dmaxlist).dist
                 end
+                
                 k = conf.net.kfun(length(X)) |> ceil |> Int
                 dnet(pushcenter2, dist, X, k)
                 if k == length(refs)

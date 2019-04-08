@@ -1,5 +1,8 @@
 using SimilaritySearch
-export fftraversal
+export fftraversal, fftclustering
+
+function _ignore3(a, b, c)
+end
 
 """
 Selects a number of farthest points in `X`, using a farthest first traversal
@@ -13,8 +16,9 @@ Selects a number of farthest points in `X`, using a farthest first traversal
 - The callbackdist function is called on each distance evaluation between pivots and items in the dataset
     `callbackdist(index-pivot, index-item, distance)`
 """
-function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, stop, callbackdist=nothing) where {T}
+function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, stop, callbackdist=_ignore3) where {T}
     N = length(X)
+    D = Vector{Float64}(undef, N)
     dmaxlist = Float64[]
     dset = [typemax(Float64) for i in 1:N]
     imax::Int = rand(1:N)
@@ -35,7 +39,7 @@ function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, s
         ipivot = imax
         imax = 0
 
-        D = zeros(Float64, N)
+        D .= 0.0
         Threads.@threads for i in 1:N
             D[i] = dist(X[i], pivot)
         end
@@ -43,9 +47,8 @@ function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, s
         for i in 1:N
             # d = dist(X[i], pivot)
             d = D[i]
-            if callbackdist != nothing
-                callbackdist(ipivot, i, d)
-            end
+            callbackdist(i, ipivot, d)
+
             if d < dset[i]
                 dset[i] = d
             end
@@ -60,4 +63,40 @@ function fftraversal(callback::Function, dist::Function, X::AbstractVector{T}, s
             break
         end
     end
+end
+
+"""
+    fftclustering(dist::Function, X::Vector{T}, numcenters::Int, k::Int) where T
+
+Clustering algorithm based on Farthest First Traversal (an efficient solution for the K-centers problem).
+- `dist` distance function
+- `X` contains the objects to be clustered
+- `numcenters` number of centers to be computed
+- `k` number of nearest references per object (k=1 makes a partition)
+
+Returns a named tuple ``(NN, irefs, dmax)``.
+
+- `NN` contains the ``k`` nearest references for each object in ``X``.
+- `irefs` contains the list of centers (indexes to ``X``)
+- `dmax` smallest distance among centers
+
+"""
+function fftclustering(dist::Function, X::Vector{T}, numcenters::Int; k::Int=1) where T
+    # refs = Vector{Float64}[]
+    irefs = Int[]
+    NN = [KnnResult(k) for i in 1:length(X)]
+    dmax = 0.0
+
+    function callback(c, _dmax)
+        # push!(refs, X[c])
+        push!(irefs, c)
+        dmax = _dmax
+    end
+
+    function capturenn(i, refID, d)
+        push!(NN[i], refID, d)
+    end
+
+    fftraversal(callback, dist, X, size_criterion(numcenters), capturenn)
+    return (NN=NN, irefs=irefs, dmax=dmax)
 end
