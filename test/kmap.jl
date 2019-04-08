@@ -96,8 +96,8 @@ end
     nnc = NearNeighborClassifier(l2_distance, M, y)
     @test optimize!(nnc, accuracy, folds=2)[1][1] > 0.9
     @test optimize!(nnc, accuracy, folds=3)[1][1] > 0.9
-    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.93
-    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.93
+    @test optimize!(nnc, accuracy, folds=5)[1][1] > 0.9
+    @test optimize!(nnc, accuracy, folds=10)[1][1] > 0.9
     @show optimize!(nnc, accuracy, folds=5)
 
     C = fftclustering(angle_distance, [normalize!(x) for x in X], 21, k=3)
