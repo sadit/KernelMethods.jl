@@ -88,7 +88,6 @@ function fftclustering(dist::Function, X::Vector{T}, numcenters::Int; k::Int=1) 
     dmax = 0.0
 
     function callback(c, _dmax)
-        # push!(refs, X[c])
         push!(irefs, c)
         dmax = _dmax
     end
