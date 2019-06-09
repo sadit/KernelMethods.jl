@@ -73,11 +73,11 @@ uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
 [[SimilaritySearch]]
 deps = ["Dates", "JSON", "LinearAlgebra", "Random", "Statistics", "StatsBase", "Test"]
-git-tree-sha1 = "ce7a855e2214ed593816d9ef31dc150a8f65ed89"
+git-tree-sha1 = "8b0f265210b8d06e4ed5c3921797f4df1403f889"
 repo-rev = "master"
-repo-url = "../SimilaritySearch.jl"
+repo-url = "https://github.com/sadit/SimilaritySearch.jl"
 uuid = "053f045d-5466-53fd-b400-a066f88fe02a"
-version = "0.3.7"
+version = "0.3.8"
 
 [[Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
