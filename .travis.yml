@@ -1,9 +1,12 @@
 # Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
+codecov: true
+coveralls: true
 os:
   - linux
   # - osx
 julia:
+  - 0.7
   - 1.0
   - 1.1
 
@@ -20,10 +23,13 @@ notifications:
     on_failure: always  # options: [always|never|change] default: always
     on_start: never     # options: [always|never|change] default: always
 
+env:
+  global:
+    - DISABLE_AMEND_COVERAGE_FROM_SRC=yes
+
 # uncomment the following lines to override the default test script
 #script:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 after_success:
-  # - julia -e 'cd(Pkg.dir("SimilaritySearch")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
-   - julia -e 'cd(Pkg.dir("KernelMethod")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
-
+  - julia -e 'cd(Pkg.dir("KernelMethods")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  - julia -e 'cd(Pkg.dir("KernelMethods")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
