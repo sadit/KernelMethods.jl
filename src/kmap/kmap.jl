@@ -1,4 +1,5 @@
 module KMap
+import StatsBase: fit
 using SimilaritySearch:
     Sequential, KnnResult, search, empty!, Item, Index
 
@@ -10,6 +11,7 @@ include("criterions.jl")
 include("fftraversal.jl")
 include("dnet.jl")
 include("kclass.jl")
+include("oneclass.jl")
 
 """
 Transforms `objects` to a new representation space induced by ``(refs, dist, kernel)``
@@ -50,10 +52,7 @@ function partition(callback::Function, dist::Function, objects::AbstractVector{T
     res = KnnResult(k)
     for i in 1:length(objects)
         empty!(res)
-        search(refs, dist, objects[i], res)
-        for p in res
-            callback(i, p)
-        end
+        callback(i, search(refs, dist, objects[i], res))
     end
 end
 
@@ -65,7 +64,12 @@ is among the ``k`` nearest references of ``u``.
 """
 function invindex(dist::Function, objects::AbstractVector{T}, refs::Index; k::Int=1) where T
     π = [Vector{Int}() for i in 1:length(refs.db)]
-    partition((i, p) -> push!(π[p.objID], i), dist, objects, refs, k=k)
+    # partition((i, p) -> push!(π[p.objID], i), dist, objects, refs, k=k)
+    partition(dist, objects, refs, k=k) do i, res
+        for p in res
+            push!(π[p.objID], i)
+        end
+    end
     π
 end
 
@@ -74,7 +78,9 @@ Returns the nearest reference (identifier) of each item in the dataset
 """
 function sequence(dist::Function, objects::AbstractVector{T}, refs::Index) where T
     s = Vector{Int}(length(objects))
-    partition((i, p) -> begin s[i] = p.objID end, dist, objects, refs)
+    partition(dist, objects, refs) do i, res
+        s[i] = first(res).objID
+    end
     s
 end
 
@@ -83,7 +89,9 @@ Returns an array of k-nearest neighbors for `objects`
 """
 function knearestreferences(dist::Function, objects::AbstractVector{T}, refs::Index) where T
     s = Vector{Vector{Int}}(length(objects))
-    partition((i, p) -> s[i] = [p.objID for p in res], dist, objects, refs)
+    partition(dist, objects, refs) do i, res
+        s[i] = [p.objID for p in res]
+    end
     s
 end
 
@@ -108,48 +116,5 @@ function centroid!(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: Ab
 
     return u
 end
-
-#=
-"""
-Computes the centroid of a collection of `DenseCosine` vectors.
-It don't destroys the input array, however, the VBOW version does it
-"""
-
-function centroid!(vecs::AbstractVector{DenseCosine{F}}) where {F <: AbstractFloat}
-    # info("** COMPUTING the centroid of $(length(vecs)) items")
-    m = length(vecs[1].vec)
-    w = zeros(F, m)
-    
-    for vv in vecs
-        v::Vector{F} = vv.vec
-        @inbounds @simd for i in 1:m
-            w[i] += v[i]
-        end
-    end
-
-    DenseCosine(w)
-end
-
-
-"""
-Computes a centroid-like sparse vector (i.e., a center under the angle distance) for a collection of sparse vectors.
-The computation destroys input array to reduce memory allocations.
-"""
-function centroid!(vecs::AbstractVector{VBOW})
-	lastpos = length(vecs)
-	while lastpos > 1
-		pos = 1
-		for i in 1:2:lastpos
-			if i < lastpos
-				vecs[pos] = vecs[i] + vecs[i+1]
-			end
-			pos += 1
-		end
-		lastpos = pos - 1
-	end
-	
-    vecs[1]
-end
-=#
 
 end

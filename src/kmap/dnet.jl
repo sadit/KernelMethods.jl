@@ -1,4 +1,5 @@
 using SimilaritySearch
+import SimilaritySearch: fit
 using Random
 export dnet
 

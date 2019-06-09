@@ -120,10 +120,3 @@ end
     @info "===== accuracy by fftclustering: $(matches/length(y))"
     @test matches/length(y) > 0.9
 end
-
-# @testset "KlusterClassifier" begin
-#     X, y = loadiris()
-#     kc = KlusterClassifier(X,y)
-#     @show kc
-#     @test kc[1][2]>0.9
-# end

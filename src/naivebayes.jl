@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export NaiveBayesClassifier, NaiveBayesKernel, kernel_prob, predict, predict_proba
+import SimilaritySearch: optimize!
+export NaiveBayesClassifier, NaiveBayesKernel, kernel_prob, predict, predict_proba, optimize!
 
 abstract type NaiveBayesKernel end
 

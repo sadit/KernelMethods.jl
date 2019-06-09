@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export NearNeighborClassifier, optimize!, predict, predict_proba
-import KernelMethods.CrossValidation: montecarlo, kfolds
 
 using SimilaritySearch:
     Sequential, KnnResult
+import SimilaritySearch: optimize!
+import KernelMethods.CrossValidation: montecarlo, kfolds
+export NearNeighborClassifier, optimize!, predict, predict_proba
 
 mutable struct NearNeighborClassifier{IndexType,LabelType}
     dist::Function

@@ -47,6 +47,7 @@ end
     @test kfolds(f, data, data, folds=10, shuffle=true) |> sum == 10
 end
 
+include("oneclass.jl")
 include("loaddata.jl")
 
 @testset "KNN" begin
@@ -77,4 +78,5 @@ end
 
 include("knnreg.jl")
 include("kmap.jl")
+
 include("kclass.jl")
