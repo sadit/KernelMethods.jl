@@ -19,7 +19,7 @@ function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m
     end
 
     if centroids
-        CC = centroid_correction(X, C)
+        CC = centroid_correction(dist, X, C)
         OneClassClassifier(CC, freqs, length(X), Q.dmax) 
     else
         OneClassClassifier(C, freqs, length(X), Q.dmax)
@@ -27,21 +27,21 @@ function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m
     
 end
 
-function regions(X, refs::Index)
-    I = KMap.invindex(l2_distance, X, refs, k=1)
+function regions(dist::Function, X, refs::Index)
+    I = KMap.invindex(dist, X, refs, k=1)
     (freqs=[length(lst) for lst in I], regions=I)
 end
 
-function regions(X, refs)
-    regions(X, fit(Sequential, refs))
+function regions(dist::Function, X, refs)
+    regions(dist, X, fit(Sequential, refs))
 end
 
 function centroid(D)
     sum(D) ./ length(D)
 end
 
-function centroid_correction(X, C)
-    [centroid(X[lst]) for lst in regions(X, C).regions if length(lst) > 0]
+function centroid_correction(dist::Function, X, C)
+    [centroid(X[lst]) for lst in regions(dist, X, C).regions if length(lst) > 0]
 end
 
 function predict(occ::OneClassClassifier{T}, dist::Function, q::T) where T

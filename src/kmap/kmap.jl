@@ -5,7 +5,7 @@ using SimilaritySearch:
 
 #using TextModel
 
-export kmap, centroid!, partition, knearestreferences, sequence
+export kmap, centroid!, partition, knearestreferences, sequence, fit, predict
 
 include("criterions.jl")
 include("fftraversal.jl")

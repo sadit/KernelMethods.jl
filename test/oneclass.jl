@@ -15,7 +15,6 @@ include("loaddata.jl")
         y = ylabels .== label
         A = X[y]
         B = X[.~y]
-    
         occ = fit(OneClassClassifier, dist, A, 21)
         ypred = [predict(occ, dist, x).similarity > 0 for x in X]
         push!(L, mean(ypred .== y))

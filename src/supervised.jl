@@ -14,7 +14,8 @@
 
 module Supervised
     using SimilaritySearch
-
+    import StatsBase: fit, predict
+    export fit, predict
     # classifiers
     include("labelencoder.jl")
     include("knn.jl")
