@@ -1,5 +1,5 @@
 module KMap
-import StatsBase: fit
+import StatsBase: fit, predict
 using SimilaritySearch:
     Sequential, KnnResult, search, empty!, Item, Index
 

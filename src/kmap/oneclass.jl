@@ -1,5 +1,4 @@
 using StatsBase: countmap
-import StatsBase: fit
 
 export OneClassClassifier, regions, centroid, fit, predict
 
