@@ -9,7 +9,7 @@ mutable struct OneClassClassifier{T}
     epsilon::Float64
 end
 
-function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m::Int) where T
+function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m::Int; centroids=true) where T
     Q = fftclustering(dist, X, m)
     C = X[Q.irefs]
     P = Dict(Q.irefs[i] => i for i in eachindex(Q.irefs))
@@ -17,7 +17,14 @@ function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m
     for nn in Q.NN
         freqs[P[first(nn).objID]] += 1
     end
-    OneClassClassifier(C, freqs, length(X), Q.dmax)
+
+    if centroids
+        CC = centroid_correction(X, C)
+        OneClassClassifier(CC, freqs, length(X), Q.dmax) 
+    else
+        OneClassClassifier(C, freqs, length(X), Q.dmax)
+    end
+    
 end
 
 function regions(X, refs::Index)
