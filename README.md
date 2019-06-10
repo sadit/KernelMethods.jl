@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/sadit/KernelMethods.jl.svg?branch=master)](https://travis-ci.org/sadit/KernelMethods.jl)
 [![Coverage Status](https://coveralls.io/repos/github/sadit/KernelMethods.jl/badge.svg?branch=master)](https://coveralls.io/github/sadit/KernelMethods.jl?branch=master)
+[![codecov](https://codecov.io/gh/sadit/KernelMethods.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/sadit/KernelMethods.jl)
 # Kernel Methods
 
 
@@ -10,7 +11,8 @@ KernelMethods.jl is a library that implements and explores Kernel-Based Methods 
 To start using `KernelMethods.jl` just type into an active Julia session
 
 ```julia
-Pkg.clone("https://github.com/sadit/KernelMethods.jl.git")
+using Pkg
+pkg"add https://github.com/sadit/KernelMethods.jl"
 
 using KernelMethods
 
