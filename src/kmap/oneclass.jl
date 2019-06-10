@@ -1,7 +1,7 @@
 using StatsBase: countmap
 import StatsBase: fit
 
-export OneClassClassifier, OneClassClassifierFFT, regions, centroid, fit, predict
+export OneClassClassifier, regions, centroid, fit, predict
 
 mutable struct OneClassClassifier{T}
     centers::Vector{T}
@@ -10,9 +10,7 @@ mutable struct OneClassClassifier{T}
     epsilon::Float64
 end
 
-abstract type OneClassClassifierFFT end
-
-function fit(::Type{OneClassClassifierFFT}, dist::Function, X::AbstractVector{T}, m::Int) where T
+function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m::Int) where T
     Q = fftclustering(dist, X, m)
     C = X[Q.irefs]
     P = Dict(Q.irefs[i] => i for i in eachindex(Q.irefs))
