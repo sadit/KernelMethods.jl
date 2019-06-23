@@ -1,6 +1,5 @@
-module Kernels
 
-export gaussian_kernel, sigmoid_kernel, cauchy_kernel, linear_kernel
+export gaussian_kernel, sigmoid_kernel, cauchy_kernel, linear_kernel, tanh_kernel
 
 """
 Creates a Gaussian kernel with the given distance function and `sigma` value
@@ -64,6 +63,4 @@ function linear_kernel(dist, sigma=1.0)
     end
 
     fun
-end
-
 end

@@ -28,7 +28,7 @@ function fit(::Type{OneClassClassifier}, dist::Function, X::AbstractVector{T}, m
 end
 
 function regions(dist::Function, X, refs::Index)
-    I = KMap.invindex(dist, X, refs, k=1)
+    I = invindex(dist, X, refs, k=1)
     (freqs=[length(lst) for lst in I], regions=I)
 end
 

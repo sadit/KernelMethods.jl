@@ -17,11 +17,8 @@ using Test
 include("loaddata.jl")
 
 @testset "encode by farthest points" begin
-    using KernelMethods.KMap: fftraversal, sqrt_criterion, change_criterion, log_criterion, kmap
-    using KernelMethods.Scores: accuracy
-    using KernelMethods.Supervised: NearNeighborClassifier, optimize!
+    using KernelMethods
     using SimilaritySearch: l2_distance, normalize!
-    using KernelMethods.Kernels: gaussian_kernel, cauchy_kernel, sigmoid_kernel
 
     X, y = loadiris()
     dist = l2_distance
@@ -46,7 +43,7 @@ include("loaddata.jl")
 end
 
 @testset "Clustering and centroid computation (with cosine)" begin
-    using KernelMethods.KMap: fftraversal, sqrt_criterion, invindex, centroid!
+    using KernelMethods: fftraversal, sqrt_criterion, invindex, centroid!
     using SimilaritySearch: l2_distance, l1_distance, angle_distance, cosine_distance
     X, y = loadiris()
     dist = l2_distance
@@ -71,11 +68,8 @@ end
 end
 
 @testset "encode with dnet" begin
-    using KernelMethods.KMap: dnet, sqrt_criterion, change_criterion, log_criterion, kmap, fftclustering
-    using KernelMethods.Scores: accuracy
-    using KernelMethods.Supervised: NearNeighborClassifier, optimize!
+    using KernelMethods
     using SimilaritySearch: l2_distance, normalize!, angle_distance
-    using KernelMethods.Kernels: gaussian_kernel, sigmoid_kernel, cauchy_kernel, tanh_kernel
     using Statistics
 
     X, y = loadiris()

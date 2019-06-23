@@ -13,10 +13,7 @@
 # limitations under the License.
 
 using KernelMethods
-import KernelMethods.Scores: pearson, spearman, isqerror
-import KernelMethods.CrossValidation: montecarlo, kfolds
-import KernelMethods.Supervised: NearNeighborRegression, optimize!, predict, predict_proba, transform, inverse_transform
-import SimilaritySearch: l2_distance
+using SimilaritySearch: l2_distance
 # import KernelMethods.Nets: KlusterClassifier
 using Test
 

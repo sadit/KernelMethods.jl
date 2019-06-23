@@ -1,5 +1,5 @@
 using SimilaritySearch
-import SimilaritySearch: fit
+import StatsBase: fit
 using Random
 export dnet
 

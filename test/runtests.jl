@@ -13,10 +13,9 @@
 # limitations under the License.
 
 using KernelMethods
-import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
-import KernelMethods.CrossValidation: montecarlo, kfolds
-import KernelMethods.Supervised: NearNeighborClassifier, NaiveBayesClassifier, optimize!, predict, predict_proba, transform, inverse_transform
-import SimilaritySearch: l2_distance, fit, Sequential
+using KernelMethods: precision
+
+using SimilaritySearch
 # import KernelMethods.Nets: KlusterClassifier
 using Test
 

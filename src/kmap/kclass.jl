@@ -1,4 +1,4 @@
-# Copyright 2018,2019 Eric S. Tellez <eric.tellez@infotec.mx>
+# Copyright 2018-2019 Eric S. Tellez <eric.tellez@infotec.mx>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,13 +14,7 @@
 export KernelClassifier, KConfigurationSpace, predict, predict_one
 
 using KernelMethods
-import KernelMethods.Scores: accuracy, recall, precision, f1, precision_recall
-import KernelMethods.CrossValidation: montecarlo, kfolds
-import KernelMethods.Supervised: NearNeighborClassifier, NaiveBayesClassifier, optimize!, predict, predict_one, transform, inverse_transform
 import SimilaritySearch: l2_distance, angle_distance
-# import KernelMethods.KMap: sqrt_criterion, log_criterion, change_criterion
-# using KernelMethods.KMap: fftraversal, sqrt_criterion, change_criterion, log_criterion, kmap
-using KernelMethods.Kernels: gaussian_kernel, cauchy_kernel, sigmoid_kernel, tanh_kernel, linear_kernel
 
 struct KConfigurationSpace
     normalize

@@ -3,9 +3,8 @@ using Test
 include("loaddata.jl")
 
 @testset "encode by farthest points" begin
-    using KernelMethods.KMap
+    using KernelMethods
     using SimilaritySearch
-    using KernelMethods.Scores
     using StatsBase: mean
 
     X, ylabels = loadiris()

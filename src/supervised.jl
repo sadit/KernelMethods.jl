@@ -1,4 +1,4 @@
-# Copyright 2017 Eric S. Tellez
+# Copyright 2017-2019 Eric S. Tellez
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module Supervised
-    using SimilaritySearch
-    import StatsBase: fit, predict
-    export fit, predict
-    # classifiers
-    include("labelencoder.jl")
-    include("knn.jl")
-    include("naivebayes.jl")
+using SimilaritySearch
+import StatsBase: fit, predict
+export fit, predict
+# classifiers
+include("labelencoder.jl")
+include("knn.jl")
+include("naivebayes.jl")
 
-    # regression
-    include("knnreg.jl")
-end
+# regression
+include("knnreg.jl")

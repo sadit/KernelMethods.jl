@@ -17,8 +17,7 @@ using StatsBase
 include("loaddata.jl")
 
 @testset "encode by farthest points" begin
-    using KernelMethods.KMap: KernelClassifier, predict
-    using KernelMethods.Scores: accuracy, recall
+    using KernelMethods
     X, y = loadiris()
     kmodel = KernelClassifier(X, y, folds=3, ensemble_size=3, size=31, score=accuracy)
     yh = predict(kmodel, X)

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-module CrossValidation
 using Random
 
 export montecarlo, kfolds
@@ -56,6 +55,4 @@ function kfolds(evalfun::Function, X::Vector{ItemType}, y::Vector{LabelType}; fo
     end
 
     return R
-end
-
 end

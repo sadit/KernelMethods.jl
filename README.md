@@ -20,20 +20,19 @@ using KernelMethods
 
 ## Usage
 
-`KernelMethods.jl` consists of a few modules
+`KernelMethods.jl` consists of the following parts
 
-- `KernelMethods.Scores`. It contains several common performance measures, i.e., accuracy, recall, precision, f1, precision_recall.
-- `KernelMethods.CrossValidation`. Some methods to perform cross validation, all of them work through callback functions:
+- *Scores*. It contains several common performance measures, i.e., accuracy, recall, precision, f1, precision_recall.
+- *CrossValidation*. Some methods to perform cross validation, all of them work through callback functions:
    - `montecarlo`
    - `kfolds`
-- `KernelMethods.Supervised`. It contains methods related to supervised learning
+- *Supervised*. It contains methods related to supervised learning
    - `NearNeighborClassifier`. It defines a `KNN` classifier
    - `optimize!`
    - `predict`
    - `predict_proba`
 
-The distance functions are mostly taken from:
-- `SimilaritySearch`
+Note: user defined distance functions are accepted; several common distances can be found in `SimilaritySearch.jl`
 
 ### Dependencies
 KernelMethods.jl depends on

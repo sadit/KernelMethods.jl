@@ -1,4 +1,4 @@
-# Copyright 2017,2018 Eric S. Tellez
+# Copyright 2017-2019 Eric S. Tellez
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import StatsBase: predict, fit
 export NearNeighborRegression, optimize!, predict, predict_proba
-import KernelMethods.CrossValidation: montecarlo, kfolds
 using Statistics
 using SimilaritySearch:
-    Sequential, KnnResult, empty!, fit
+    Sequential, KnnResult, empty!
 
 mutable struct NearNeighborRegression{IndexType,DataType}
     dist::Function

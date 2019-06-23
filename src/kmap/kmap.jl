@@ -1,4 +1,3 @@
-module KMap
 import StatsBase: fit, predict
 using SimilaritySearch:
     Sequential, KnnResult, search, empty!, Item, Index
@@ -115,6 +114,4 @@ function centroid!(objects::AbstractVector{Vector{F}})::Vector{F} where {F <: Ab
     end
 
     return u
-end
-
 end
