@@ -24,13 +24,13 @@ It applies the desired weighting scheme for binary and multiclass problems
 - `:micro` returns the global recall, without distinguishing among classes
 """
 function recall(gold, predict; weight=:macro)::Float64
-    precision, recall, precision_recall_per_class = precision_recall(gold, predict)
+    P = precision_recall(gold, predict)
     if weight == :macro
-        mean(x -> x.second[2], precision_recall_per_class)
+        mean(x -> x.recall, values(P.per_class))
     elseif weight == :weighted
-        mean(x -> x.second[2] * x.second[3] / length(gold), precision_recall_per_class)
+        mean(x -> x.recall * x.population / length(gold), values(P.per_class))
     elseif :micro
-        recall
+        P.recall
     else
         throw(Exception("Unknown weighting method $weight"))
     end
@@ -45,13 +45,13 @@ It applies the desired weighting scheme for binary and multiclass problems
 - `:micro` returns the global precision, without distinguishing among classes
 """
 function precision(gold, predict; weight=:macro)::Float64
-    precision, recall, precision_recall_per_class = precision_recall(gold, predict)
+    P = precision_recall(gold, predict)
     if weight == :macro
-        mean(x -> x.second[1], precision_recall_per_class)
+        mean(x -> x.precision, values(P.per_class))
     elseif weight == :weighted
-        mean(x -> x.second[1] * x.second[3] / length(gold), precision_recall_per_class)
+        mean(x -> x.precision * x.population / length(gold), values(P.per_class))
     elseif weight == :micro
-        precision
+        P.precision
     else
         throw(Exception("Unknown weighting method $weight"))
     end
@@ -66,13 +66,21 @@ It applies the desired weighting scheme for binary and multiclass problems
 - `:micro` returns the global F1, without distinguishing among classes
 """
 function f1(gold, predict; weight=:macro)::Float64
-    precision, recall, precision_recall_per_class = precision_recall(gold, predict)
+    P = precision_recall(gold, predict)
+    function _f1(x)::Float64
+        d = x.precision + x.recall
+        if d == 0
+            0.0
+        else
+            2 * x.precision * x.recall / d
+        end
+    end
     if weight == :macro
-        mean(x -> 2 * x.second[1] * x.second[2] / (x.second[1] + x.second[2]), precision_recall_per_class)
+        mean(x -> _f1(x), values(P.per_class))
     elseif weight == :weighted
-        mean(x -> 2 * x.second[1] * x.second[2] / (x.second[1] + x.second[2]) * x.second[3]/length(gold), precision_recall_per_class)
+        mean(x -> _f1(x) * x.population / length(gold), values(P.per_class))
     elseif weight == :micro
-        2 * (precision * recall) / (precision + recall)
+        _f1(P)
     else
         throw(Exception("Unknown weighting method $weight"))
     end
@@ -82,20 +90,20 @@ end
 Computes precision, recall, and f1 scores, for global and per-class granularity
 """
 function scores(gold, predicted)
-    precision, recall, precision_recall_per_class = precision_recall(gold, predicted)
+    P = precision_recall(gold, predicted)
     m = Dict(
-        :micro_f1 => 2 * precision * recall / (precision + recall),
-		:precision => precision,
-		:recall => recall,
+        :micro_f1 => 2 * P.precision * P.recall / (P.precision + P.recall),
+		:precision => P.precision,
+		:recall => P.recall,
 		:class_f1 => Dict(),
 		:class_precision => Dict(),
 		:class_recall => Dict()
     )
 
-    for (k, v) in precision_recall_per_class
-        m[:class_f1][k] = 2 * v[1] * v[2] / (v[1] + v[2])
-		m[:class_precision][k] = v[1]
-		m[:class_recall][k] = v[2]
+    for (k, v) in P.per_class
+        m[:class_f1][k] = 2 * v.precision * v.recall / (v.precision + v.recall)
+		m[:class_precision][k] = v.precision
+		m[:class_recall][k] = v.recall
     end
     
     m[:macro_recall] = mean(values(m[:class_recall]))
@@ -110,7 +118,7 @@ and the predicted set
 """
 function precision_recall(gold, predicted)
     labels = unique(gold)
-    M = Dict{typeof(labels[1]), Tuple}()
+    M = Dict{typeof(labels[1]), NamedTuple}()
     tp_ = 0
     tn_ = 0
     fn_ = 0
@@ -144,10 +152,15 @@ function precision_recall(gold, predicted)
         tn_ += tn
         fn_ += fn
         fp_ += fp
-        M[label] = (tp / (tp + fp), tp / (tp + fn), sum(lgold) |> Int)  # precision, recall, class-population
+        precision = tp / (tp + fp)
+
+        if precision <= eps(typeof(precision))
+            @info "precision is zero for label '$label'; #classes=$(length(labels)) "
+        end
+        M[label] = (precision=precision, recall=tp / (tp + fn), population=sum(lgold) |> Int)
     end
 
-    tp_ / (tp_ + fp_), tp_ / (tp_ + fn_), M
+    (precision=tp_ / (tp_ + fp_), recall=tp_ / (tp_ + fn_), per_class=M)
 end
 
 """
