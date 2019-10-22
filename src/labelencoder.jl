@@ -21,18 +21,19 @@ struct LabelEncoder{LabelType}
     labels::Vector{LabelType}
     freqs::Vector{Int}
 
-    function LabelEncoder(y::AbstractVector{LabelType}) where LabelType
-        L = Dict{LabelType,Int}()
-        for c in y
-            L[c] = get(L, c, 0) + 1
-        end
+end
 
-        labels = collect(keys(L))
-        sort!(labels)
-        freqs = [L[c] for c in labels]
-        imap = Dict(c => i for (i, c) in enumerate(labels))
-        new{LabelType}(imap, labels, freqs)
+function fit(LabelEncoder, y::AbstractVector{LabelType}) where LabelType
+    L = Dict{LabelType,Int}()
+    for c in y
+        L[c] = get(L, c, 0) + 1
     end
+
+    labels = collect(keys(L))
+    sort!(labels)
+    freqs = [L[c] for c in labels]
+    imap = Dict(c => i for (i, c) in enumerate(labels))
+    LabelEncoder{LabelType}(imap, labels, freqs)
 end
 
 function transform(le::LabelEncoder{LabelType}, y::LabelType)::Int where LabelType
@@ -44,5 +45,5 @@ function inverse_transform(le::LabelEncoder{LabelType}, y::Int)::LabelType where
 end
 
 function broadcastable(le::LabelEncoder)
-    [le]
+    (le,)
 end

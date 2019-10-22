@@ -13,7 +13,9 @@
 # limitations under the License.
 
 module KernelMethods
-
+import StatsBase: fit, predict
+using SimilaritySearch
+export fit, predict
 include("scores.jl")
 include("cv.jl")
 include("kernels.jl")

@@ -27,7 +27,7 @@ mutable struct NearNeighborClassifier{IndexType,LabelType}
     weight
 
     function NearNeighborClassifier(dist::Function, X::AbstractVector{ItemType}, y::AbstractVector{LabelType}, k::Int=1, weight=:uniform, create_index=nothing) where {ItemType, LabelType}
-        le = LabelEncoder(y)
+        le = fit(LabelEncoder, y)
         y_ = [transform(le, l) for l in y]
        
         if create_index == nothing

@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-using SimilaritySearch
-import StatsBase: fit, predict
-export fit, predict
 # classifiers
 include("labelencoder.jl")
 include("knn.jl")
